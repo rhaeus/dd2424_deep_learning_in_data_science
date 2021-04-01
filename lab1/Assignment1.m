@@ -23,10 +23,6 @@ rng(400);
 W = 0.01*randn(K,d);
 b = 0.01*randn(K,1);
 
-% P = EvaluateClassifier(X_train(1:20, 1), W(:, 1:20), b);
-% J = ComputeCost(X_train, Y_train, W, b, 0.01)
-% acc = ComputeAccuracy(X_train, y_train, W, b)
-
 lambda = 0;
 gd_params = GDparams(100, 0.001, 40);
 
@@ -34,6 +30,7 @@ loss_training = zeros(gd_params.n_epochs, 1);
 loss_validation = zeros(gd_params.n_epochs, 1);
 accuracy = zeros(gd_params.n_epochs, 1);
 
+% train
 for i=1:gd_params.n_epochs
     for j=randperm(n/gd_params.n_batch)
         j_start = (j-1)*gd_params.n_batch + 1;
