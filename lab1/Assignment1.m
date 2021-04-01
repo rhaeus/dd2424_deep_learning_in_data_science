@@ -28,33 +28,49 @@ b = 0.01*randn(K,1);
 % acc = ComputeAccuracy(X_train, y_train, W, b)
 
 lambda = 0;
-% P = EvaluateClassifier(X_train(1:20, 1), W(:, 1:20), b);
-% disp('computing gradsnum')
-% [ngrad_b, ngrad_W] = ComputeGradsNumSlow(X_train(1:20, 1), Y_train(:, 1), W(:, 1:20), b, lambda, 1e-6);
-% disp('computing grads')
-% [grad_W, grad_b] = ComputeGradients(X_train(1:20, 1), Y_train(:, 1), P, W(:, 1:20), lambda);
+gd_params = GDparams(100, 0.001, 40);
 
-P = EvaluateClassifier(X_train(:, 1), W, b);
-disp('computing gradsnum')
-[ngrad_b, ngrad_W] = ComputeGradsNumSlow(X_train(:, 1), Y_train(:, 1), W, b, lambda, 1e-6);
-disp('computing grads')
-[grad_W, grad_b] = ComputeGradients(X_train(:, 1), Y_train(:, 1), P, W, lambda);
+loss_training = zeros(gd_params.n_epochs, 1);
+loss_validation = zeros(gd_params.n_epochs, 1);
+accuracy = zeros(gd_params.n_epochs, 1);
 
-eps = 1e-6;
-diff_W = abs(ngrad_W - grad_W)./max(eps, abs(grad_W) + abs(ngrad_W));
-diff_b = abs(ngrad_b - grad_b)./max(eps, abs(grad_b) + abs(ngrad_b));
-
-
-if all(diff_W < 1e-6)
-    disp('W ok')
-else 
-    disp('W not ok, max diff: ')
-    max(max(diff_W))
+for i=1:gd_params.n_epochs
+    for j=randperm(n/gd_params.n_batch)
+        j_start = (j-1)*gd_params.n_batch + 1;
+        j_end = j*gd_params.n_batch;
+        inds = j_start:j_end;
+        Xbatch = X_train(:, j_start:j_end);
+        Ybatch = Y_train(:, j_start:j_end);
+        
+        [W, b] = MiniBatchGD(Xbatch, Ybatch, gd_params, W, b, lambda);
+        
+    end
+    
+    loss_training(i) = ComputeCost(X_train, Y_train, W, b, lambda);
+    loss_validation(i) = ComputeCost(X_valid, Y_valid, W, b, lambda);
+    accuracy(i) = ComputeAccuracy(X_test, y_test, W, b);
 end
 
-if all(diff_b < 1e-6)
-    disp('b ok')
-else 
-    disp('b not ok, max diff: ')
-    max(max(diff_b))
+% Plots the weights
+figure(1);
+for i=1:10
+    im = reshape(W(i, :), 32, 32, 3);
+    s_im{i} = (im - min(im(:))) / (max(im(:)) - min(im(:)));
+    s_im{i} = permute(s_im{i}, [2, 1, 3]);
 end
+montage(s_im, 'Size', [2,5]);
+
+% evolution of the loss as diagram
+figure(2);
+x = 1:gd_params.n_epochs;
+plot(x, loss_training, x, loss_validation);
+title('Loss')
+legend('Training', 'Validation')
+
+% evolution of the accuracy as diagram
+figure(3);
+x = 1:gd_params.n_epochs;
+plot(x, accuracy);
+title('Accuracy')
+legend('Test')
+

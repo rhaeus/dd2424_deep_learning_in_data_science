@@ -3,7 +3,7 @@ function [P] = EvaluateClassifier(X, W, b)
 % • W and b are the parameters of the network.
 % • each column of P contains the probability for each label
 
-s = W * X + b;
+s = W * X + b; % Kxn
 P = exp(s) ./ sum(exp(s));
 end
 
