@@ -1,6 +1,7 @@
 addpath datasets/cifar-10-batches-mat/;
 
 % load data
+disp('load data')
 [X_train, Y_train, y_train] = LoadBatch('data_batch_1.mat');
 mean_X = mean(X_train, 2); %dx1
 std_X = std(X_train, 0, 2); %dx1
@@ -17,6 +18,7 @@ X_test = X_test - repmat(mean_X, [1, size(X_test,2)]);
 X_test = X_test ./ repmat(std_X, [1, size(X_test,2)]);
 
 % init model
+disp('init model')
 [d, n] = size(X_train);
 K = 10;
 rng(400);
@@ -31,7 +33,10 @@ loss_validation = zeros(gd_params.n_epochs, 1);
 accuracy = zeros(gd_params.n_epochs, 1);
 
 % train
+disp('begin training')
 for i=1:gd_params.n_epochs
+    msg = sprintf('epoch %d of %d.',i,gd_params.n_epochs);
+    disp(msg)
     for j=randperm(n/gd_params.n_batch)
         j_start = (j-1)*gd_params.n_batch + 1;
         j_end = j*gd_params.n_batch;
@@ -47,6 +52,7 @@ for i=1:gd_params.n_epochs
     loss_validation(i) = ComputeCost(X_valid, Y_valid, W, b, lambda);
     accuracy(i) = ComputeAccuracy(X_test, y_test, W, b);
 end
+disp('training done')
 
 % Plots the weights
 figure(1);
@@ -71,3 +77,58 @@ plot(x, accuracy);
 title('Accuracy')
 legend('Test')
 
+
+% functions
+function acc = ComputeAccuracy(X, y, W, b)
+P = EvaluateClassifier(X, W, b); % Kxn
+[K,n] = size(P); % 10x10000
+[~, p] = max(P); % p is index of max, 1xn
+acc = sum(p==y) / n;
+end
+
+function J = ComputeCost(X, Y, W, b, lambda)
+[d,n] = size(X);
+P = EvaluateClassifier(X, W, b); % Kxn
+l = -log(sum(Y .* P)); % Y = Kxn, l = 1xn
+J = sum(l)/n + lambda * sum(sum(W .* W));
+end
+
+function [grad_W, grad_b] = ComputeGradients(X, Y, P, W, lambda)
+[K,n] = size(P);
+G_batch = -(Y - P); %Kxn
+% Kxn * nxd = Kxd
+grad_W = (G_batch * X') / n + 2 * lambda * W;
+One = ones(n,1);
+grad_b = (G_batch * One) / n;
+end
+
+function [P] = EvaluateClassifier(X, W, b)
+s = W * X + b; % Kxn
+P = exp(s) ./ sum(exp(s));
+end
+
+function [X, Y, y] = LoadBatch(filename)
+A = load(filename);
+[n, d] = size(A.data); % nxd
+X = double(A.data') / 255; % dxn
+y = A.labels'; % 1xn
+
+% CIFAR-10 encodes the labels as integers between 0-9 but
+% Matlab indexes matrices and vectors starting at 1. Therefore it may be
+% easier to encode the labels between 1-10.
+y = y + uint8(ones(1, n)); % 1xn
+
+% Create image label matrix
+K = 10;
+Y = zeros(K, n); % Kxn
+for i = 1:n
+    Y(y(i),i) = 1;
+end
+end
+
+function [Wstar, bstar] = MiniBatchGD(X, Y, GDparams, W, b, lambda)
+P = EvaluateClassifier(X, W, b);
+[grad_W, grad_b] = ComputeGradients(X, Y, P, W, lambda);
+Wstar = W - GDparams.eta * grad_W;
+bstar = b - (GDparams.eta * grad_b);
+end
