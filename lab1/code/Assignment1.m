@@ -25,14 +25,33 @@ rng(400);
 W = 0.01*randn(K,d);
 b = 0.01*randn(K,1);
 
+% % Experiment 1
+% lambda = 0;
+% n_batch = 100;
+% eta = 0.1;
+% n_epochs = 40;
+% 
+% % Experiment 2
+% lambda = 0;
+% n_batch = 100;
+% eta = 0.001;
+% n_epochs = 40;
+% 
+% % Experiment 3
+% lambda = 0.1;
+% n_batch = 100;
+% eta = 0.001;
+% n_epochs = 40;
+% 
+% Experiment 4
 lambda = 1;
 n_batch = 100;
 eta = 0.001;
 n_epochs = 40;
+
 gd_params = GDparams(n_batch, eta, n_epochs);
 
-msg = sprintf('lambda=%0.5f, n_batch=%d, eta=%0.5f, n_epochs=%d', lambda, n_batch, eta, n_epochs);
-disp(msg)
+fprintf('lambda=%0.5f\nn_batch=%d\neta=%0.5f\nn_epochs=%d\n', lambda, n_batch, eta, n_epochs);
 
 loss_training = zeros(gd_params.n_epochs, 1);
 loss_validation = zeros(gd_params.n_epochs, 1);
@@ -41,8 +60,7 @@ accuracy = zeros(gd_params.n_epochs, 1);
 % train
 disp('begin training')
 for i=1:gd_params.n_epochs
-    msg = sprintf('epoch %d of %d.',i,gd_params.n_epochs);
-    disp(msg)
+    fprintf('epoch %d of %d.\n',i,gd_params.n_epochs);
     for j=randperm(n/gd_params.n_batch)
         j_start = (j-1)*gd_params.n_batch + 1;
         j_end = j*gd_params.n_batch;
@@ -59,6 +77,10 @@ for i=1:gd_params.n_epochs
     accuracy(i) = ComputeAccuracy(X_test, y_test, W, b);
 end
 disp('training done')
+
+fprintf('final training loss %0.3f\n', loss_training(gd_params.n_epochs));
+fprintf('final validation loss %0.3f\n', loss_validation(gd_params.n_epochs));
+fprintf('final accuracy %0.4f\n', accuracy(gd_params.n_epochs));
 
 % Plots the weights
 figure(1);
