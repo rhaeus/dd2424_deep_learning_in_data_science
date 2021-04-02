@@ -25,8 +25,14 @@ rng(400);
 W = 0.01*randn(K,d);
 b = 0.01*randn(K,1);
 
-lambda = 0;
-gd_params = GDparams(100, 0.001, 40);
+lambda = 1;
+n_batch = 100;
+eta = 0.001;
+n_epochs = 40;
+gd_params = GDparams(n_batch, eta, n_epochs);
+
+msg = sprintf('lambda=%0.5f, n_batch=%d, eta=%0.5f, n_epochs=%d', lambda, n_batch, eta, n_epochs);
+disp(msg)
 
 loss_training = zeros(gd_params.n_epochs, 1);
 loss_validation = zeros(gd_params.n_epochs, 1);
