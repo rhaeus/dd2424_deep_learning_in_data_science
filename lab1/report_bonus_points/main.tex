@@ -1,0 +1,59 @@
+\documentclass{article}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+
+% References and Bibliography
+\usepackage[hidelinks]{hyperref}
+\usepackage[natbibapa]{apacite}
+\usepackage{natbib}
+\bibliographystyle{apacite}
+
+% align for equations
+\usepackage{amsfonts}
+\usepackage{mathtools}
+
+% Table formatting
+\usepackage{booktabs}
+
+% Code blocks for Python
+\usepackage{listings}
+\usepackage{color}
+\usepackage{inconsolata}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{CustomPython}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\footnotesize,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2,
+	basicstyle=\scriptsize\ttfamily
+}
+
+\lstset{style=CustomPython}
+
+\input{custom_imports}
+\begin{document}
+\begin{otherlanguage}{\documentlanguage}
+\input{titlepage}
+\newpage
+\setcounter{page}{1}
+\pagenumbering{arabic}
+\input{content}
+\end{otherlanguage}
+\end{document}

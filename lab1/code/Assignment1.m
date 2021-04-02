@@ -2,14 +2,39 @@ addpath datasets/cifar-10-batches-mat/;
 
 % load data
 disp('load data')
-[X_train, Y_train, y_train] = LoadBatch('data_batch_1.mat');
+d = 3072;
+n = 10000;
+K = 10;
+
+X_train = zeros(d,n*5);
+Y_train = zeros(K,n*5);
+y_train = zeros(1,n*5);
+
+for i=0:4
+    filename = sprintf('data_batch_%d.mat', i+1);
+    [X, Y, y] = LoadBatch(filename);
+    X_train(:,i*n+1:(i+1)*n) = X;
+    Y_train(:,i*n+1:(i+1)*n) = Y;
+    y_train(:,i*n+1:(i+1)*n) = y;
+end
+
+% use last 1000 columns as validation set
+X_valid = X_train(:, end-1000+1:end);
+Y_valid = Y_train(:, end-1000+1:end);
+y_valid = y_train(:, end-1000+1:end);
+
+% remove last 1000 columns from training set
+X_train(:, end-1000+1:end) = [];
+Y_train(:, end-1000+1:end) = [];
+y_train(:, end-1000+1:end) = [];
+
 mean_X = mean(X_train, 2); %dx1
 std_X = std(X_train, 0, 2); %dx1
 
+% pre process data
 X_train = X_train - repmat(mean_X, [1, size(X_train,2)]);
 X_train = X_train ./ repmat(std_X, [1, size(X_train,2)]);
 
-[X_valid, Y_valid, y_valid] = LoadBatch('data_batch_2.mat');
 X_valid = X_valid - repmat(mean_X, [1, size(X_valid,2)]);
 X_valid = X_valid ./ repmat(std_X, [1, size(X_valid,2)]);
 
@@ -20,7 +45,6 @@ X_test = X_test ./ repmat(std_X, [1, size(X_test,2)]);
 % init model
 disp('init model')
 [d, n] = size(X_train);
-K = 10;
 rng(400);
 W = 0.01*randn(K,d);
 b = 0.01*randn(K,1);

@@ -1,0 +1,176 @@
+\section{Exercise 2.1}
+Starting from the results of Experiment 4 of Assignment 1 the following approaches to improve the network performance were tested:\\
+\begin{enumerate}[label=(\roman*)]
+    \item use all available training data
+    \item train for a longer time
+\end{enumerate}
+The results after Experiment 4 of Assignment 1 were as follows:\\
+training loss: 1.899\\
+validation loss: 1.958\\
+accuracy: 37.38\%\\
+and the following parameters were used:\\
+lambda=0, n\_epochs=40, n\_batch=100, eta=0.1
+
+% \begin{table}[ht]
+% \begin{tabular}{|l|l|l|l|l|}
+% \hline
+%                     & \textbf{Experiment 1} & \textbf{Experiment 2} & \textbf{Experiment 3} & \textbf{Experiment 4} \\ \hline
+% \textbf{Training}   & 5.074                 & 1.609                 & 0.3908                & 1.899                 \\ \hline
+% \textbf{Validation} & 7.526                 & 1.791                 & 1.903                 & 1.958                 \\ \hline
+% \end{tabular}
+% \caption{Summary of final loss}
+% \label{tab:summary_loss}
+% \end{table}
+
+% \begin{table}[ht]
+% \begin{tabular}{|l|l|l|l|l|}
+% \hline
+%                   & \textbf{Experiment 1} & \textbf{Experiment 2} & \textbf{Experiment 3} & \textbf{Experiment 4} \\ \hline
+% \textbf{Accuracy} & 27.84\%               & 39.08\%               & 39.46\%               & 37.38\%               \\ \hline
+% \end{tabular}
+% \caption{Summary of final accuracy}
+% \label{tab:summary_accuracy}
+% \end{table}
+
+\newpage
+
+\subsection{Results Improvement (i)} 
+
+final training loss 1.920\\
+final validation loss 1.935\\
+final accuracy 0.3786\\
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=1, n_epochs=40, n_batch=100, eta=.001 all data for training/loss.png}
+        \caption{Improvement (i) Loss (lambda=1, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:lossa}
+    \end{figure}
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=1, n_epochs=40, n_batch=100, eta=.001 all data for training/accuracy.png}
+        \caption{Improvement (i) Accuracy (lambda=1, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:accuracya}
+    \end{figure}
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=1, n_epochs=40, n_batch=100, eta=.001 all data for training/weights.png}
+        \caption{Improvement (i) Weights (lambda=1, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:weightsa}
+    \end{figure}
+
+\clearpage
+
+\subsection{Experiment 1 diagrams}
+% lambda = 0\\
+% n\_epochs = 40\\
+% n\_batch = 100\\
+% eta = 0.1\\
+As seen in the diagrams with the parameters of this run the network is not really able to learn. The loss and accuracy look very random. 
+This results in a very low accuracy (27.84\%). The weight matrices look pretty random as well.
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=0, n_epochs=40, n_batch=100, eta=.1/loss.png}
+        \caption{Experiment 1 Loss (lambda=0, n\_epochs=40, n\_batch=100, eta=0.1)}
+        \label{fig:loss1}
+    \end{figure}
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=0, n_epochs=40, n_batch=100, eta=.1/accuracy.png}
+        \caption{Experiment 1 Accuracy (lambda=0, n\_epochs=40, n\_batch=100, eta=0.1)}
+        \label{fig:accuracy1}
+    \end{figure}
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=0, n_epochs=40, n_batch=100, eta=.1/weights.png}
+        \caption{Experiment 1 Weights (lambda=0, n\_epochs=40, n\_batch=100, eta=0.1)}
+        \label{fig:weights1}
+    \end{figure}
+
+\clearpage
+\subsection{Experiment 2 diagrams}
+% lambda = 0\\
+% n\_epochs = 40\\
+% n\_batch = 100\\
+% eta = 0.1\\
+Compared to the first experiment in this run we use a much smaller learning rate. In this run it looks like the network learns better and it results in a higher
+accuracy (39.08\%). If we look at the loss graphs we can see that there is a big difference between the training loss and validation loss. 
+This could be an indicator for overfitting. The weight matrices look less random.
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=0, n_epochs=40, n_batch=100, eta=.001/loss.png}
+        \caption{Experiment 2 Loss (lambda=0, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:loss2}
+    \end{figure}
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=0, n_epochs=40, n_batch=100, eta=.001/accuracy.png}
+        \caption{Experiment 2 Accuracy (lambda=0, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:accuracy2}
+    \end{figure}
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=0, n_epochs=40, n_batch=100, eta=.001/weights.png}
+        \caption{Experiment 2 Weights (lambda=0, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:weights2}
+    \end{figure}
+
+\clearpage
+\subsection{Experiment 3 diagrams}
+% lambda = 0.1\\
+% n\_epochs = 40\\
+% n\_batch = 100\\
+% eta = 0.001\\
+In this experiment we use a small regularization term. This results in a smaller training loss compared to the previous run.
+But we have still a big difference between training and validation which could mean that we overfit. We start to see some more distinct patterns
+in the weight matrices.
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=.1, n_epochs=40, n_batch=100, eta=.001/loss.png}
+        \caption{Experiment 3 Loss (lambda=0.1, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:loss3}
+    \end{figure}
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=.1, n_epochs=40, n_batch=100, eta=.001/accuracy.png}
+        \caption{Experiment 3 Accuracy (lambda=0.1, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:accuracy3}
+    \end{figure}
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=.1, n_epochs=40, n_batch=100, eta=.001/weights.png}
+        \caption{Experiment 3 Weights (lambda=0.1, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:weights3}
+    \end{figure}
+
+\clearpage
+\subsection{Experiment 4 diagrams}
+% lambda = 1\\
+% n\_epochs = 40\\
+% n\_batch = 100\\
+% eta = 0.001\\
+In this experiment we use an even bigger regularization term. That results in a slightly reduced accuracy but also the training 
+and validation loss are close. That could mean that we are not overfitting anymore.\\
+In the weight matrix we see that we start to learn some patterns that looks similar to the images of the corresponding classes. 
+Maybe with more training these patterns become even more visible.
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=1, n_epochs=40, n_batch=100, eta=.001/loss.png}
+        \caption{Experiment 4 Loss (lambda=1, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:loss4}
+    \end{figure}
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=1, n_epochs=40, n_batch=100, eta=.001/accuracy.png}
+        \caption{Experiment 4 Accuracy (lambda=1, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:accuracy4}
+    \end{figure}
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/lambda=1, n_epochs=40, n_batch=100, eta=.001/weights.png}
+        \caption{Experiment 4 Weights (lambda=1, n\_epochs=40, n\_batch=100, eta=0.001)}
+        \label{fig:weights4}
+    \end{figure}
+
+\clearpage
+
+\section{Conclusion}
+Increasing the amount of regularization reduces the accuracy but also prevents the network from overfitting. The choice of the correct
+learning rate is very important for the networks ability to learn, as we can see when comparing Experiment 1 and Experiment 2. The learning rate
+has a huge impact on the accuracy.
