@@ -4,12 +4,11 @@ Starting from the results of Experiment 4 of Assignment 1 the following approach
     \item use all available training data
     \item train for a longer time
 \end{enumerate}
-The results after Experiment 4 of Assignment 1 were as follows:\\
+The results after Experiment 4 of Assignment 1
+(lambda=0, n\_epochs=40, n\_batch=100, eta=0.1) were as follows:\\
 training loss: 1.899\\
 validation loss: 1.958\\
 accuracy: 37.38\%\\
-and the following parameters were used:\\
-lambda=0, n\_epochs=40, n\_batch=100, eta=0.1
 
 % \begin{table}[ht]
 % \begin{tabular}{|l|l|l|l|l|}
@@ -53,6 +52,56 @@ final accuracy 0.3786\\
         \includegraphics[width=\textwidth]{../code/result_pics/lambda=1, n_epochs=40, n_batch=100, eta=.001 all data for training/weights.png}
         \caption{Improvement (i) Weights (lambda=1, n\_epochs=40, n\_batch=100, eta=0.001)}
         \label{fig:weightsa}
+    \end{figure}
+
+\clearpage
+
+\subsection{Results Improvement (ii)}
+In this experiment I trained on all available data as in experiment 1 and used the same parameters. I trained the network for 2000 epochs and 
+every 100 epochs I stored a snapshot of the diagrams for loss, accuracy and weights. 
+Also I logged the values of each epoch to a file (result\_pics/train\_longer/values.csv). After each epoch I compared the training loss to 
+the validation loss and set a threshold (0.5) to detect when the network begins to overfit, but in my runs the values stayed very close to each other 
+and never exceeded that threshold. The maximum absolute difference over all 2000 epochs was 0.01996.\\
+As a result we can observe that training longer does not improve the result that much, but we also see that no overfitting seems to occur. 
+We see that during the first 100 epochs the accuracy increases slightly but after that it stays more or less the same.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{epoch} & \textbf{training loss} & \textbf{validation loss} & \textbf{accuracy} \\ \hline
+1              & 2.35312                & 2.36131                  & 36.06\%           \\ \hline
+10             & 1.92387                & 1.9376                   & 37.78\%           \\ \hline
+50             & 1.92102                & 1.93453                  & 37.55\%           \\ \hline
+100            & 1.92044                & 1.93162                  & 37.65\%           \\ \hline
+200            & 1.91963                & 1.92828                  & 37.72\%           \\ \hline
+300            & 1.92069                & 1.93098                  & 37.64\%           \\ \hline
+400            & 1.92159                & 1.93381                  & 37.42\%           \\ \hline
+500            & 1.92045                & 1.92874                  & 37.89\%           \\ \hline
+600            & 1.9197                 & 1.93142                  & 37.90\%           \\ \hline
+700            & 1.91865                & 1.93335                  & 38.25\%           \\ \hline
+800            & 1.91992                & 1.93714                  & 38.37\%           \\ \hline
+900            & 1.92071                & 1.93663                  & 38.03\%           \\ \hline
+1000           & 1.92166                & 1.92969                  & 37.43\%           \\ \hline
+\end{tabular}
+\caption{Summary of longer training}
+\label{tab:summary_longer_training}
+\end{table}
+
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/train_longer/2000_accuracy.png}
+        \caption{Improvement (ii) accuracy after 2000 epochs}
+        \label{fig:accuracyb}
+    \end{figure}
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/train_longer/2000_loss.png}
+        \caption{Improvement (ii) Loss after 2000 epochs}
+        \label{fig:lossb}
+    \end{figure}
+    \begin{figure}[ht]
+        \includegraphics[width=\textwidth]{../code/result_pics/train_longer/2000_weights.png}
+        \caption{Improvement (ii) weights after 2000 epochs}
+        \label{fig:weightsb}
     \end{figure}
 
 \clearpage

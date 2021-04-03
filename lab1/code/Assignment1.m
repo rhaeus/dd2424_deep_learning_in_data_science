@@ -71,7 +71,8 @@ b = 0.01*randn(K,1);
 lambda = 1;
 n_batch = 100;
 eta = 0.001;
-n_epochs = 40;
+n_epochs = 5000;
+snapshot_step = 100;
 
 gd_params = GDparams(n_batch, eta, n_epochs);
 
@@ -80,9 +81,18 @@ fprintf('lambda=%0.5f\nn_batch=%d\neta=%0.5f\nn_epochs=%d\n', lambda, n_batch, e
 loss_training = zeros(gd_params.n_epochs, 1);
 loss_validation = zeros(gd_params.n_epochs, 1);
 accuracy = zeros(gd_params.n_epochs, 1);
+difference = zeros(gd_params.n_epochs, 1);
+
 
 % train
 disp('begin training')
+final_epoch = gd_params.n_epochs;
+
+delete 'result_pics/values.csv';
+fid = fopen('result_pics/values.csv', 'a+');
+fprintf(fid, 'epoch;training_loss;validation_loss;difference;accuracy\n');
+
+
 for i=1:gd_params.n_epochs
     fprintf('epoch %d of %d.\n',i,gd_params.n_epochs);
     for j=randperm(n/gd_params.n_batch)
@@ -99,35 +109,84 @@ for i=1:gd_params.n_epochs
     loss_training(i) = ComputeCost(X_train, Y_train, W, b, lambda);
     loss_validation(i) = ComputeCost(X_valid, Y_valid, W, b, lambda);
     accuracy(i) = ComputeAccuracy(X_test, y_test, W, b);
+    
+    diff = abs(loss_training(i) - loss_validation(i));
+    difference(i) = diff;
+    
+    fprintf(fid, '%d;%0.5f;%0.5f;%0.5f;%0.5f\n', i, loss_training(i), loss_validation(i), difference(i), accuracy(i));
+    
+    if mod(i, snapshot_step) == 0
+        % take snapshot
+        % Plots the weights
+        figure(1);
+        for j=1:10
+            im = reshape(W(j, :), 32, 32, 3);
+            s_im{j} = (im - min(im(:))) / (max(im(:)) - min(im(:)));
+            s_im{j} = permute(s_im{j}, [2, 1, 3]);
+        end
+        montage(s_im, 'Size', [2,5]);
+        name = sprintf('result_pics/%d_weights.png', i);
+        saveas(gcf,name);
+
+        % evolution of the loss as diagram
+        figure(2);
+        x = 1:i;
+        plot(x, loss_training(1:i, :), x, loss_validation(1:i,:));
+        title('Loss')
+        legend('Training', 'Validation')
+        name = sprintf('result_pics/%d_loss.png', i);
+        saveas(gcf,name);
+
+        % evolution of the accuracy as diagram
+        figure(3);
+        x = 1:i;
+        plot(x, accuracy(1:i,:));
+        title('Accuracy')
+        legend('Test')
+        name = sprintf('result_pics/%d_accuracy.png', i);
+        saveas(gcf,name);
+        
+        % evolution of the difference as diagram
+        figure(4);
+        x = 1:i;
+        plot(x, difference(1:i,:));
+        title('Difference')
+        name = sprintf('result_pics/%d_difference.png', i);
+        saveas(gcf,name);
+    end
+    
+    fprintf('training loss: %0.3f\n', loss_training(i))
+    fprintf('validation loss: %0.3f\n', loss_validation(i))
+    fprintf('loss diff: %0.3f\n', diff)
+    
+    if diff > 0.5
+        final_epoch = i;
+        fprintf('overfit start at epoch %d. Abort.\n', i)
+        break
+    end
 end
+fclose(fid);
 disp('training done')
 
-fprintf('final training loss %0.3f\n', loss_training(gd_params.n_epochs));
-fprintf('final validation loss %0.3f\n', loss_validation(gd_params.n_epochs));
-fprintf('final accuracy %0.4f\n', accuracy(gd_params.n_epochs));
-
-% Plots the weights
-figure(1);
-for i=1:10
-    im = reshape(W(i, :), 32, 32, 3);
-    s_im{i} = (im - min(im(:))) / (max(im(:)) - min(im(:)));
-    s_im{i} = permute(s_im{i}, [2, 1, 3]);
+for i=1:gd_params.n_epochs/snapshot_step
+    index = i*snapshot_step;
+    if index > final_epoch
+        fprintf('epoch %d\n', final_epoch)
+        fprintf('final training loss %0.3f\n', loss_training(final_epoch));
+        fprintf('final validation loss %0.3f\n', loss_validation(final_epoch));
+        fprintf('final accuracy %0.4f\n', accuracy(final_epoch));
+        fprintf('final difference %0.4f\n', difference(final_epoch));
+        break
+    end
+    
+    fprintf('epoch %d\n', index)
+    fprintf('final training loss %0.3f\n', loss_training(index));
+    fprintf('final validation loss %0.3f\n', loss_validation(index));
+    fprintf('final accuracy %0.4f\n', accuracy(index));
+    fprintf('final difference %0.4f\n', difference(index));
 end
-montage(s_im, 'Size', [2,5]);
 
-% evolution of the loss as diagram
-figure(2);
-x = 1:gd_params.n_epochs;
-plot(x, loss_training, x, loss_validation);
-title('Loss')
-legend('Training', 'Validation')
 
-% evolution of the accuracy as diagram
-figure(3);
-x = 1:gd_params.n_epochs;
-plot(x, accuracy);
-title('Accuracy')
-legend('Test')
 
 
 % functions
