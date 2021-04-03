@@ -71,7 +71,7 @@ b = 0.01*randn(K,1);
 lambda = 1;
 n_batch = 100;
 eta = 0.001;
-n_epochs = 5000;
+n_epochs = 500;
 snapshot_step = 100;
 
 gd_params = GDparams(n_batch, eta, n_epochs);
@@ -96,6 +96,7 @@ fprintf(fid, 'epoch;training_loss;validation_loss;difference;accuracy\n');
 for i=1:gd_params.n_epochs
     fprintf('epoch %d of %d.\n',i,gd_params.n_epochs);
     for j=randperm(n/gd_params.n_batch)
+%     for j=1:n/gd_params.n_batch
         j_start = (j-1)*gd_params.n_batch + 1;
         j_end = j*gd_params.n_batch;
         inds = j_start:j_end;
