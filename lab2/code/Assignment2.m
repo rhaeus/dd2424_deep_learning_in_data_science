@@ -36,13 +36,14 @@ cycles = 1;
 
 
 updates_per_cycle = 2*n_s;
-snapshot_step = updates_per_cycle/10;
+snapshots_per_cycle = 10;
+snapshot_step = updates_per_cycle/snapshots_per_cycle;
 
 % gd_params = GDparams(n_batch, eta, n_epochs);
 
 % fprintf('lambda=%0.5f\nn_batch=%d\neta=%0.5f\nn_epochs=%d\n', lambda, n_batch, eta, n_epochs);
 
-amount = 11;
+amount = (snapshots_per_cycle+1)*cycles;
 loss_training = zeros(amount, 1);
 loss_validation = zeros(amount, 1);
 
@@ -65,17 +66,18 @@ x_axis = zeros(amount, 1);
 
 % train
 disp('begin training')
+ex = 3;
 
-delete 'result_pics/values.csv';
-fid = fopen('result_pics/values.csv', 'a+');
-fprintf(fid, 'cycel;count;loss_training;loss_validation;cost_training;cost_validation;accuracy_training;accuracy_validation;accuracy_test\n');
+name = sprintf('result_pics/ex%d_values.csv', ex);
+delete(name);
+fid = fopen(name, 'a+');
+fprintf(fid, 'cycle;count;loss_training;loss_validation;cost_training;cost_validation;accuracy_training;accuracy_validation;accuracy_test\n');
 
 
-
+j = 1;
+count = 0;
 for l=0:cycles-1
-    fprintf('cycel %d of %d.\n',l+1,cycles);
-    count = 0;
-    j = 1;
+    fprintf('cycle %d of %d.\n',l+1,cycles);
     
     for t = 2*l*n_s:(2*l+1)*n_s-1
         j_start = (j-1)*n_batch + 1;
@@ -164,7 +166,7 @@ for l=0:cycles-1
             diff = abs(loss_training(index) - loss_validation(index));
             difference(index) = diff;
 
-            fprintf(fid, '%d;%d;%0.5f;%0.5f;%0.5f;%0.5f\n', l+1, x_axis(index), loss_training(index), loss_validation(index), difference(index), accuracy(index));
+            fprintf(fid, '%d;%d;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f\n', l+1, x_axis(index), loss_training(index), loss_validation(index), cost_training(index), cost_validation(index), accuracy_training(index), accuracy_validation(index), accuracy_test(index));
         end
 
     end
@@ -177,7 +179,7 @@ figure(2);
 plot(x_axis, loss_training, x_axis, loss_validation);
 title('Loss')
 legend('Training', 'Validation')
-name = sprintf('result_pics/ex3_loss.png');
+name = sprintf('result_pics/ex%d_loss.png', ex);
 saveas(gcf,name);
 
  % evolution of the cost as diagram
@@ -185,7 +187,7 @@ figure(3);
 plot(x_axis, cost_training, x_axis, cost_validation);
 title('Cost')
 legend('Training', 'Validation')
-name = sprintf('result_pics/ex3_cost.png');
+name = sprintf('result_pics/ex%d_cost.png', ex);
 saveas(gcf,name);
 
 % evolution of the accuracy as diagram
@@ -193,7 +195,7 @@ figure(4);
 plot(x_axis, accuracy_training, x_axis, accuracy_validation, x_axis, accuracy_test);
 title('Accuracy')
 legend('Training', 'Validation','Test')
-name = sprintf('result_pics/ex3_accuracy.png');
+name = sprintf('result_pics/ex%d_accuracy.png', ex);
 saveas(gcf,name);
 
 % evolution of the difference as diagram
