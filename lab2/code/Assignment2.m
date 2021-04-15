@@ -31,19 +31,19 @@ n_batch = 100;
 % n_epochs = 200;
 eta_min = 1e-5; 
 eta_max = 1e-1;
-n_s = 500;
-cycles = 1;
+n_s = 800;
+cycles = 3;
 
 
-updates_per_cycle = 2*n_s;
+updates_per_cycle = 2*n_s
 snapshots_per_cycle = 10;
-snapshot_step = updates_per_cycle/snapshots_per_cycle;
+snapshot_step = updates_per_cycle/snapshots_per_cycle
 
 % gd_params = GDparams(n_batch, eta, n_epochs);
 
 % fprintf('lambda=%0.5f\nn_batch=%d\neta=%0.5f\nn_epochs=%d\n', lambda, n_batch, eta, n_epochs);
 
-amount = (snapshots_per_cycle+1)*cycles;
+amount = snapshots_per_cycle*cycles + 1;
 loss_training = zeros(amount, 1);
 loss_validation = zeros(amount, 1);
 
@@ -56,6 +56,7 @@ accuracy_test = zeros(amount, 1);
 
 difference = zeros(amount, 1);
 x_axis = zeros(amount, 1);
+etas = zeros(cycles*updates_per_cycle, 1);
 
 % loss_training = [];
 % loss_validation = [];
@@ -66,7 +67,7 @@ x_axis = zeros(amount, 1);
 
 % train
 disp('begin training')
-ex = 3;
+ex = 4;
 
 name = sprintf('result_pics/ex%d_values.csv', ex);
 delete(name);
@@ -85,6 +86,7 @@ for l=0:cycles-1
         Xbatch = X_train(:, j_start:j_end);
         Ybatch = Y_train(:, j_start:j_end);
         eta = eta_min + (t-2*l*n_s)/n_s*(eta_max-eta_min);
+        etas(count+1) = eta;
         
         
         j = j + 1;
@@ -115,15 +117,13 @@ for l=0:cycles-1
             accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, Ws, bs);
             accuracy_test(index) = ComputeAccuracy(X_test, y_test, Ws, bs);
             
-            x_axis(index) = (l+1)*count;
+            x_axis(index) = count;
 
             diff = abs(loss_training(index) - loss_validation(index));
             difference(index) = diff;
 
             fprintf(fid, '%d;%d;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f\n', l+1, x_axis(index), loss_training(index), loss_validation(index), cost_training(index), cost_validation(index), accuracy_training(index), accuracy_validation(index), accuracy_test(index));
-        end
-        
-            
+        end     
     end
     
     for t = (2*l+1)*n_s:2*(l+1)*n_s-1
@@ -132,7 +132,7 @@ for l=0:cycles-1
         Xbatch = X_train(:, j_start:j_end);
         Ybatch = Y_train(:, j_start:j_end);
         eta = eta_max - (t-(2*l+1)*n_s)/n_s*(eta_max-eta_min);
-        
+        etas(count+1) = eta;
         
         j = j + 1;
         if j > n/n_batch
@@ -161,7 +161,7 @@ for l=0:cycles-1
             accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, Ws, bs);
             accuracy_test(index) = ComputeAccuracy(X_test, y_test, Ws, bs);
             
-            x_axis(index) = (l+1)*count;
+            x_axis(index) = count;
 
             diff = abs(loss_training(index) - loss_validation(index));
             difference(index) = diff;
@@ -171,6 +171,7 @@ for l=0:cycles-1
 
     end
 end
+
 fclose(fid);
 disp('training done')
 
@@ -196,6 +197,14 @@ plot(x_axis, accuracy_training, x_axis, accuracy_validation, x_axis, accuracy_te
 title('Accuracy')
 legend('Training', 'Validation','Test')
 name = sprintf('result_pics/ex%d_accuracy.png', ex);
+saveas(gcf,name);
+
+%evolution of the eta as diagram
+figure(5);
+x=1:count;
+plot(x, etas);
+title('eta')
+name = sprintf('result_pics/ex%d_eta.png', ex);
 saveas(gcf,name);
 
 % evolution of the difference as diagram
