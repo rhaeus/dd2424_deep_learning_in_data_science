@@ -25,44 +25,64 @@ disp('init model')
 m = 50; % number of nodes in hidden layer
 
 [Ws, bs] = InitModel(m,d,K);
-% Ws
-
-%d=20, n = 2;
-
-disp('compute grad')
 lambda = 0;
-[ngrad_b, ngrad_W] = ComputeGradsNumSlow(X_train(:, 1:2), Y_train(:, 1:2), Ws, bs, lambda, 1e-5);
-disp('slow done')
+n_batch = 100;
+eta = 0.01;
+n_epochs = 200;
+snapshot_step = 100;
 
-[P, Xs] = EvaluateClassifier(X_train(:, 1:2), Ws, bs);
-disp('evaluate done')
-[grad_W, grad_b] = ComputeGradients(Xs, Y_train(:, 1:2), P, Ws, lambda);
-disp('my done')
+gd_params = GDparams(n_batch, eta, n_epochs);
 
-[k, ~] = size(Xs);
+fprintf('lambda=%0.5f\nn_batch=%d\neta=%0.5f\nn_epochs=%d\n', lambda, n_batch, eta, n_epochs);
 
-for i = 1:k
-%     ngrad_W{i}(:,1:8) 
-%     grad_W{i}(:,1:8) 
-    diff_W = abs(ngrad_W{i} - grad_W{i});
-    diff_b = abs(ngrad_b{i} - grad_b{i});
+loss_training = zeros(gd_params.n_epochs, 1);
+loss_validation = zeros(gd_params.n_epochs, 1);
+accuracy = zeros(gd_params.n_epochs, 1);
+difference = zeros(gd_params.n_epochs, 1);
+
+
+% train
+disp('begin training')
+final_epoch = gd_params.n_epochs;
+
+delete 'result_pics/values.csv';
+fid = fopen('result_pics/values.csv', 'a+');
+fprintf(fid, 'epoch;training_loss;validation_loss;difference;accuracy\n');
+
+
+for i=1:gd_params.n_epochs
+    fprintf('epoch %d of %d.\n',i,gd_params.n_epochs);
+%     for j=randperm(n/gd_params.n_batch)
+%     for j=1:n/gd_params.n_batch
+%         j_start = (j-1)*gd_params.n_batch + 1;
+%         j_end = j*gd_params.n_batch;
+%         inds = j_start:j_end;
+%         Xbatch = X_train(:, j_start:j_end);
+%         Ybatch = Y_train(:, j_start:j_end);
+        X = X_train(:,1:100);
+        Y = Y_train(:,1:100);
+        
+        [Ws, bs] = MiniBatchGD(X, Y, gd_params, Ws, bs, lambda);
+        
+%     end
     
-    disp(i)
-
-    if all(diff_W < 1e-5)
-        disp('W ok')
-    else
-        disp('W not ok')
-        disp(max(max(diff_W)))
-    end
-
-    if all(diff_b < 1e-5)
-        disp('b ok')
-    else
-        disp('b not ok')
-        disp(max(max(diff_b)))
-    end
+    loss_training(i) = ComputeCost(X_train(:,1:100), Y_train(:,1:100), Ws, bs, lambda);
+    loss_validation(i) = ComputeCost(X_valid(:,1:100), Y_valid(:,1:100), Ws, bs, lambda);
+    accuracy(i) = ComputeAccuracy(X_test, y_test, Ws, bs);
+    
+    diff = abs(loss_training(i) - loss_validation(i));
+    difference(i) = diff;
+    
+    fprintf(fid, '%d;%0.5f;%0.5f;%0.5f;%0.5f\n', i, loss_training(i), loss_validation(i), difference(i), accuracy(i));
+    
+    fprintf('training loss: %0.3f\n', loss_training(i))
+    fprintf('validation loss: %0.3f\n', loss_validation(i))
+    fprintf('loss diff: %0.3f\n', diff)
+    
 end
+fclose(fid);
+disp('training done')
+
 
 
 % functions
@@ -80,14 +100,12 @@ bs = {b1; b2};
 end
 
 
-function acc = ComputeAccuracy(X, y, W, b)
-P = EvaluateClassifier(X, W, b); % Kxn
+function acc = ComputeAccuracy(X, y, Ws, bs)
+[P, Xs] = EvaluateClassifier(X, Ws, bs); % Kxn
 [K,n] = size(P); % 10x10000
 [~, p] = max(P); % p is index of max, 1xn
 acc = sum(p==y) / n;
 end
-
-
 
 function [grad_Ws, grad_bs] = ComputeGradients(Xs, Y, P, Ws, lambda)
 [K,n] = size(P);
@@ -133,9 +151,16 @@ for i = 1:n
 end
 end
 
-function [Wstar, bstar] = MiniBatchGD(X, Y, GDparams, W, b, lambda)
-P = EvaluateClassifier(X, W, b);
-[grad_W, grad_b] = ComputeGradients(X, Y, P, W, lambda);
-Wstar = W - GDparams.eta * grad_W;
-bstar = b - (GDparams.eta * grad_b);
+function [Ws_star, bs_star] = MiniBatchGD(X, Y, GDparams, Ws, bs, lambda)
+[P, Xs] = EvaluateClassifier(X, Ws, bs); % Kxn
+[grad_Ws, grad_bs] = ComputeGradients(Xs, Y, P, Ws, lambda);
+
+[k, ~] = size(Ws);
+Ws_star = cell(k, 1);
+bs_star = cell(k, 1);
+
+for i=1:k
+    Ws_star{i} = Ws{i} - GDparams.eta * grad_Ws{i};
+    bs_star{i} = bs{i} - GDparams.eta * grad_bs{i};
+end
 end
