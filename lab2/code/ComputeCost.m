@@ -9,14 +9,14 @@ for i=1:k
 end
 
 
-l1 = -log(sum(Y .* P)); % Y = Kxn, l = 1xn
-l1 = sum(l1)/n;
+% l1 = -log(sum(Y .* P)); % Y = Kxn, l = 1xn
+% l1 = sum(l1)/n;
 
 % J = sum(l)/n + lambda * reg;
-bla = mean(-mean(sum(Y .* log(P)), 1));
-if bla ~= l1
-    disp('not the same')
-end
+l = mean(-mean(sum(Y .* log(P)), 1));
+% if l ~= l1
+%     disp('not the same')
+% end
 % size(bla)
-J = bla + lambda * reg;
+J = l + lambda * reg;
 end
