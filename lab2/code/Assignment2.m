@@ -6,7 +6,7 @@ d = 3072;
 n = 10000;
 K = 10;
 
-validation_amount = 5000;
+validation_amount = 1000;
 
 X_train = zeros(d,n*5);
 Y_train = zeros(K,n*5);
@@ -58,18 +58,19 @@ n_batch = 100;
 eta_min = 1e-5; 
 eta_max = 1e-1;
 n_s = 2*floor(n / n_batch);
-cycles = 5;
+% n_s = 1000;
+cycles = 3;
 
-l_min=-5;
-l_max=-2;
-
-lambda_count = 20;
-lambdas = zeros(lambda_count,1);
-% random
-for i=1:lambda_count
-    l = l_min + (l_max - l_min)*rand(1, 1);
-    lambdas(i) = 10^l;
-end
+% l_min=-5;
+% l_max=-2;
+% 
+% lambda_count = 20;
+% lambdas = zeros(lambda_count,1);
+% % random
+% for i=1:lambda_count
+%     l = l_min + (l_max - l_min)*rand(1, 1);
+%     lambdas(i) = 10^l;
+% end
 
 % l_min = 10^-5;
 % l_max = 10^-1;
@@ -78,29 +79,60 @@ end
 %     lambdas(i+1) = l_min + i*step;
 % end
 
-ex=4;
-name = sprintf('result_pics/ex%d_lambda_fine_search_random_1.csv', ex);
+% ex=4;
+% name = sprintf('result_pics/ex%d_lambda_fine_search_random_1.csv', ex);
+% delete(name);
+% fid = fopen(name, 'a+');
+% fprintf(fid, 'l_min=%0.5f;l_max=%0.5f;cycles=%d;n_s=%d\n', l_min, l_max, cycles, n_s);
+% fprintf(fid, 'lambda;accuracy_validation;accuracy_test\n');
+% 
+% for i=1:lambda_count
+%     fprintf('%d/%d: lambda=%0.5f\n', i, lambda_count,lambdas(i));
+%     [Ws, bs] = InitModel(m,d,K);
+%     [acc_valid, acc_test] = train(X_train, Y_train, X_valid, y_valid,X_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambdas(i));
+%     fprintf('accuracy_validation = %0.5f\n', acc_valid);
+%     fprintf('accuracy_test = %0.5f\n', acc_test);
+%     fprintf(fid, '%0.5f;%0.5f;%0.5f\n', lambdas(i), acc_valid, acc_test);
+% end
+
+% fclose(fid);
+lambda = 0.00211;
+[acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambda);
+
+
+disp('done')
+
+
+function [acc_valid, acc_test] = train(X_train, Y_train,y_train, X_valid,Y_valid, y_valid, X_test, Y_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambda)
+[d, n] = size(X_train);
+
+updates_per_cycle = 2*n_s;
+snapshots_per_cycle = 10;
+snapshot_step = updates_per_cycle/snapshots_per_cycle;
+
+
+amount = snapshots_per_cycle*cycles + 1;
+loss_training = zeros(amount, 1);
+loss_validation = zeros(amount, 1);
+
+cost_training = zeros(amount, 1);
+cost_validation = zeros(amount, 1);
+
+accuracy_training = zeros(amount, 1);
+accuracy_validation = zeros(amount, 1);
+accuracy_test = zeros(amount, 1);
+
+x_axis = zeros(amount, 1);
+etas = zeros(cycles*updates_per_cycle, 1);
+
+name = sprintf('result_pics/values_lambda=%0.5f_ns=%d_cycles=%d.csv', lambda, n_s,cycles);
 delete(name);
 fid = fopen(name, 'a+');
-fprintf(fid, 'l_min=%0.5f;l_max=%0.5f;cycles=%d;n_s=%d\n', l_min, l_max, cycles, n_s);
-fprintf(fid, 'lambda;accuracy_validation;accuracy_test\n');
-
-for i=1:lambda_count
-    fprintf('%d/%d: lambda=%0.5f\n', i, lambda_count,lambdas(i));
-    [Ws, bs] = InitModel(m,d,K);
-    [acc_valid, acc_test] = train(X_train, Y_train, X_valid, y_valid,X_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambdas(i));
-    fprintf('accuracy_validation = %0.5f\n', acc_valid);
-    fprintf('accuracy_test = %0.5f\n', acc_test);
-    fprintf(fid, '%0.5f;%0.5f;%0.5f\n', lambdas(i), acc_valid, acc_test);
-end
-
-fclose(fid);
-disp('search done')
+fprintf(fid, 'cycle;count;loss_training;loss_validation;cost_training;cost_validation;accuracy_training;accuracy_validation;accuracy_test\n');
 
 
-function [acc_valid, acc_test] = train(X_train, Y_train, X_valid, y_valid,X_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambda)
-[d, n] = size(X_train);
-j=1;
+j = 1;
+count = 0;
 for l=0:cycles-1
     fprintf('cycle %d of %d.\n',l+1,cycles);
     
@@ -110,6 +142,7 @@ for l=0:cycles-1
         Xbatch = X_train(:, j_start:j_end);
         Ybatch = Y_train(:, j_start:j_end);
         eta = eta_min + (t-2*l*n_s)/n_s*(eta_max-eta_min);
+        etas(count+1) = eta;
         
         j = j + 1;
         if j > n/n_batch
@@ -117,6 +150,31 @@ for l=0:cycles-1
         end
 
         [Ws, bs] = MiniBatchGD(Xbatch, Ybatch, eta, Ws, bs, lambda);
+        
+        count = count + 1;
+        if count == 1 || mod(count, snapshot_step) == 0 
+            if count == 1
+                index = 1;
+            else
+                index = count/snapshot_step+1;
+            end
+            
+            % A loss function/error function is for a single training example/input. 
+            % A cost function, on the other hand, is the average loss over the entire training dataset.
+            loss_training(index) = ComputeCost(X_train(:,1:n_batch), Y_train(:,1:n_batch), Ws, bs, lambda);
+            loss_validation(index) = ComputeCost(X_valid(:,1:n_batch), Y_valid(:,1:n_batch), Ws, bs, lambda);
+            
+            cost_training(index) = ComputeCost(X_train, Y_train, Ws, bs, lambda);
+            cost_validation(index) = ComputeCost(X_valid, Y_valid, Ws, bs, lambda);
+            
+            accuracy_training(index) = ComputeAccuracy(X_train, y_train, Ws, bs);
+            accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, Ws, bs);
+            accuracy_test(index) = ComputeAccuracy(X_test, y_test, Ws, bs);
+            
+            x_axis(index) = count;
+
+            fprintf(fid, '%d;%d;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f\n', l+1, x_axis(index), loss_training(index), loss_validation(index), cost_training(index), cost_validation(index), accuracy_training(index), accuracy_validation(index), accuracy_test(index));
+        end     
     end
     
     for t = (2*l+1)*n_s:2*(l+1)*n_s-1
@@ -125,6 +183,7 @@ for l=0:cycles-1
         Xbatch = X_train(:, j_start:j_end);
         Ybatch = Y_train(:, j_start:j_end);
         eta = eta_max - (t-(2*l+1)*n_s)/n_s*(eta_max-eta_min);
+        etas(count+1) = eta;
         
         j = j + 1;
         if j > n/n_batch
@@ -133,11 +192,80 @@ for l=0:cycles-1
 
         [Ws, bs] = MiniBatchGD(Xbatch, Ybatch, eta, Ws, bs, lambda);
         
+        count = count + 1;
+        if count == 1 || mod(count, snapshot_step) == 0 
+            if count == 1
+                index = 1;
+            else
+                index = count/snapshot_step+1;
+            end
+            
+            % A loss function/error function is for a single training example/input. 
+            % A cost function, on the other hand, is the average loss over the entire training dataset.
+            loss_training(index) = ComputeCost(X_train(:,1:n_batch), Y_train(:,1:n_batch), Ws, bs, lambda);
+            loss_validation(index) = ComputeCost(X_valid(:,1:n_batch), Y_valid(:,1:n_batch), Ws, bs, lambda);
+            
+            cost_training(index) = ComputeCost(X_train, Y_train, Ws, bs, lambda);
+            cost_validation(index) = ComputeCost(X_valid, Y_valid, Ws, bs, lambda);
+            
+            accuracy_training(index) = ComputeAccuracy(X_train, y_train, Ws, bs);
+            accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, Ws, bs);
+            accuracy_test(index) = ComputeAccuracy(X_test, y_test, Ws, bs);
+            
+            x_axis(index) = count;
+
+            fprintf(fid, '%d;%d;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f\n', l+1, x_axis(index), loss_training(index), loss_validation(index), cost_training(index), cost_validation(index), accuracy_training(index), accuracy_validation(index), accuracy_test(index));
+        end     
+        
     end
 end
 
 acc_valid = ComputeAccuracy(X_valid, y_valid, Ws, bs);
 acc_test = ComputeAccuracy(X_test, y_test, Ws, bs);
+
+cost_train = ComputeCost(X_train, Y_train, Ws, bs, lambda);
+cost_valid = ComputeCost(X_valid, Y_valid, Ws, bs, lambda);
+cost_test = ComputeCost(X_test, Y_test, Ws, bs, lambda);
+
+% terminal output
+fprintf('accuracy_validation = %0.5f\n', acc_valid);
+fprintf('accuracy_test = %0.5f\n', acc_test);
+fprintf('cost_train = %0.5f\n', cost_train);
+fprintf('cost_valid = %0.5f\n', cost_valid);
+fprintf('cost_test = %0.5f\n', cost_test);
+
+%plot
+% evolution of the loss as diagram
+figure(2);
+plot(x_axis, loss_training, x_axis, loss_validation);
+title('Loss')
+legend('Training', 'Validation')
+name = sprintf('result_pics/loss_lambda=%0.5f_ns=%d_cycles=%d.png', lambda, n_s, cycles);
+saveas(gcf,name);
+
+ % evolution of the cost as diagram
+figure(3);
+plot(x_axis, cost_training, x_axis, cost_validation);
+title('Cost')
+legend('Training', 'Validation')
+name = sprintf('result_pics/cost_lambda=%0.5f_ns=%d_cycles=%d.png', lambda, n_s, cycles);
+saveas(gcf,name);
+
+% evolution of the accuracy as diagram
+figure(4);
+plot(x_axis, accuracy_training, x_axis, accuracy_validation, x_axis, accuracy_test);
+title('Accuracy')
+legend('Training', 'Validation','Test')
+name = sprintf('result_pics/accuracy_lambda=%0.5f_ns=%d_cycles=%d.png', lambda, n_s, cycles);
+saveas(gcf,name);
+
+%evolution of the eta as diagram
+figure(5);
+x=1:count;
+plot(x, etas);
+title('eta')
+name = sprintf('result_pics/eta_lambda=%0.5f_ns=%d_cycles=%d.png', lambda, n_s, cycles);
+saveas(gcf,name);
 
 end
 
