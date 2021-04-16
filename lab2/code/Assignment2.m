@@ -52,25 +52,31 @@ disp('init model')
 m = 50; % number of nodes in hidden layer
 
 [Ws, bs] = InitModel(m,d,K);
-% lambda = 0.01;
-n_batch = 100;
 
+n_batch = 100;
 eta_min = 1e-5; 
 eta_max = 1e-1;
 n_s = 2*floor(n / n_batch);
-% n_s = 1000;
 cycles = 3;
+
+%%%%%%%%%%%%%%%%%%%%%%%
+% random lambda search
+%%%%%%%%%%%%%%%%%%%%%%%
 
 % l_min=-5;
 % l_max=-2;
 % 
 % lambda_count = 20;
 % lambdas = zeros(lambda_count,1);
-% % random
+
 % for i=1:lambda_count
 %     l = l_min + (l_max - l_min)*rand(1, 1);
 %     lambdas(i) = 10^l;
 % end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% uniform lambda search
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % l_min = 10^-5;
 % l_max = 10^-1;
@@ -78,6 +84,10 @@ cycles = 3;
 % for i=0:lambda_count-1
 %     lambdas(i+1) = l_min + i*step;
 % end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% perform lambda search
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % ex=4;
 % name = sprintf('result_pics/ex%d_lambda_fine_search_random_1.csv', ex);
@@ -94,8 +104,11 @@ cycles = 3;
 %     fprintf('accuracy_test = %0.5f\n', acc_test);
 %     fprintf(fid, '%0.5f;%0.5f;%0.5f\n', lambdas(i), acc_valid, acc_test);
 % end
-
 % fclose(fid);
+
+%%%%%%%%%%%%%%%%%%%%
+% final training
+%%%%%%%%%%%%%%%%%%%%
 lambda = 0.00211;
 [acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambda);
 
@@ -314,7 +327,34 @@ grad_Ws{1} = (G_batch * Xs{1}') / n + 2 * lambda * Ws{1};
 grad_bs{1} = (G_batch * One) / n;
 end
 
+function J = ComputeCost(X, Y, Ws, bs, lambda)
+[d,n] = size(X);
+P = EvaluateClassifier(X, Ws, bs); % Kxn
 
+reg = 0;
+[k, ~] = size(Ws);
+for i=1:k
+    reg = reg + sum(sum(Ws{i} .* Ws{i}));
+end
+
+l = mean(-mean(sum(Y .* log(P)), 1));
+J = l + lambda * reg;
+end
+
+function [P, Xs] = EvaluateClassifier(X, Ws, bs)
+[k, ~] = size(Ws);
+Xs = cell(k, 1);
+Xs{1} = X;
+
+for i=1:k-1
+    s1 = Ws{i} * Xs{i} + bs{i}; % mxn
+    h = max(0, s1); % mxn
+    Xs{i+1} = h;
+end
+
+s = Ws{k} * Xs{k} + bs{k}; %Kxn
+P = exp(s) ./ sum(exp(s)); %Kxn
+end
 
 function [X, Y, y] = LoadBatch(filename)
 A = load(filename);
