@@ -49,9 +49,9 @@ X_test = X_test ./ repmat(std_X, [1, size(X_test,2)]);
 disp('init model')
 [d, n] = size(X_train);
 [K, n] = size(Y_train);
-m = 50; % number of nodes in hidden layer
+ms = [50; 30; 20; 20; 10; 10; 10; 10]; % number of nodes in hidden layer
 
-[Ws, bs] = InitModel(m,d,K);
+[Ws, bs] = InitModel(ms,d,K);
 
 n_batch = 100;
 eta_min = 1e-5; 
@@ -119,6 +119,7 @@ disp('done')
 
 function [acc_valid, acc_test] = train(X_train, Y_train,y_train, X_valid,Y_valid, y_valid, X_test, Y_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambda)
 [d, n] = size(X_train);
+[k, ~] = size(Ws);
 
 updates_per_cycle = 2*n_s;
 snapshots_per_cycle = 10;
@@ -139,7 +140,7 @@ accuracy_test = zeros(amount, 1);
 x_axis = zeros(amount, 1);
 etas = zeros(cycles*updates_per_cycle, 1);
 
-name = sprintf('result_pics/values_lambda=%0.5f_ns=%d_cycles=%d.csv', lambda, n_s,cycles);
+name = sprintf('result_pics/values_lambda=%0.5f_ns=%d_cycles=%d_k=%d.csv', lambda, n_s,cycles,k);
 delete(name);
 fid = fopen(name, 'a+');
 fprintf(fid, 'cycle;count;loss_training;loss_validation;cost_training;cost_validation;accuracy_training;accuracy_validation;accuracy_test\n');
@@ -255,7 +256,7 @@ figure(2);
 plot(x_axis, loss_training, x_axis, loss_validation);
 title('Loss')
 legend('Training', 'Validation')
-name = sprintf('result_pics/loss_lambda=%0.5f_ns=%d_cycles=%d.png', lambda, n_s, cycles);
+name = sprintf('result_pics/loss_lambda=%0.5f_ns=%d_cycles=%d_k=%d.png', lambda, n_s, cycles,k);
 saveas(gcf,name);
 
  % evolution of the cost as diagram
@@ -263,7 +264,7 @@ figure(3);
 plot(x_axis, cost_training, x_axis, cost_validation);
 title('Cost')
 legend('Training', 'Validation')
-name = sprintf('result_pics/cost_lambda=%0.5f_ns=%d_cycles=%d.png', lambda, n_s, cycles);
+name = sprintf('result_pics/cost_lambda=%0.5f_ns=%d_cycles=%d_k=%d.png', lambda, n_s, cycles,k);
 saveas(gcf,name);
 
 % evolution of the accuracy as diagram
@@ -271,7 +272,7 @@ figure(4);
 plot(x_axis, accuracy_training, x_axis, accuracy_validation, x_axis, accuracy_test);
 title('Accuracy')
 legend('Training', 'Validation','Test')
-name = sprintf('result_pics/accuracy_lambda=%0.5f_ns=%d_cycles=%d.png', lambda, n_s, cycles);
+name = sprintf('result_pics/accuracy_lambda=%0.5f_ns=%d_cycles=%d_k=%d.png', lambda, n_s, cycles,k);
 saveas(gcf,name);
 
 %evolution of the eta as diagram
@@ -279,32 +280,40 @@ figure(5);
 x=1:count;
 plot(x, etas);
 title('eta')
-name = sprintf('result_pics/eta_lambda=%0.5f_ns=%d_cycles=%d.png', lambda, n_s, cycles);
+name = sprintf('result_pics/eta_lambda=%0.5f_ns=%d_cycles=%d_k=%d.png', lambda, n_s, cycles,k);
 saveas(gcf,name);
 
 end
 
 % functions
-function [Ws, bs] = InitModel(m, d, K)
+function [Ws, bs] = InitModel(ms, d, K)
 rng(400);
+%Xavier initialization
+[k, ~] = size(ms); %given are k-1 hidden layers
+k = k + 1; %k is number of layers
 
-% W1 = randn(m,d)/sqrt(d);
-% b1 = zeros(m,1);
+Ws = cell(k, 1);
+bs = cell(k, 1);
 
-% W2 = randn(K,m)/sqrt(m);
-% b2 = zeros(K,1);
+Ws{1} = randn(ms(1),d)/sqrt(d);
+bs{1} = zeros(ms(1),1);
 
-W1 = randn(m,d)/sqrt(d);
-b1 = zeros(m,1);
+for i=2:k-1
+    Ws{i} = randn(ms(i),ms(i-1))/sqrt(ms(i-1));
+    bs{i} = zeros(ms(i),1);
+end
 
-W2 = randn(m,m)/sqrt(m);
-b2 = zeros(m,1);
+Ws{k} = randn(K,ms(k-1))/sqrt(ms(k-1));
+bs{k} = zeros(K,1);
 
-W3 = randn(K,m)/sqrt(m);
-b3 = zeros(K,1);
+% W2 = randn(m,m)/sqrt(m);
+% b2 = zeros(m,1);
+% 
+% W3 = randn(K,m)/sqrt(m);
+% b3 = zeros(K,1);
 
-Ws = {W1; W2; W3};
-bs = {b1; b2;b3};
+% Ws = {W1; W2; W3};
+% bs = {b1; b2;b3};
 end
 
 
