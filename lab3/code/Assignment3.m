@@ -288,14 +288,23 @@ end
 function [Ws, bs] = InitModel(m, d, K)
 rng(400);
 
+% W1 = randn(m,d)/sqrt(d);
+% b1 = zeros(m,1);
+
+% W2 = randn(K,m)/sqrt(m);
+% b2 = zeros(K,1);
+
 W1 = randn(m,d)/sqrt(d);
 b1 = zeros(m,1);
 
-W2 = randn(K,m)/sqrt(m);
-b2 = zeros(K,1);
+W2 = randn(m,m)/sqrt(m);
+b2 = zeros(m,1);
 
-Ws = {W1; W2};
-bs = {b1; b2};
+W3 = randn(K,m)/sqrt(m);
+b3 = zeros(K,1);
+
+Ws = {W1; W2; W3};
+bs = {b1; b2;b3};
 end
 
 
