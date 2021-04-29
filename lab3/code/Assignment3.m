@@ -50,6 +50,7 @@ disp('init model')
 [d, n] = size(X_train);
 [K, n] = size(Y_train);
 ms = [50; 30; 20; 20; 10; 10; 10; 10]; % number of nodes in hidden layer
+% ms = [50; 50]; % number of nodes in hidden layer
 
 [Ws, bs] = InitModel(ms,d,K);
 
@@ -163,6 +164,7 @@ for l=0:cycles-1
         j = j + 1;
         if j > n/n_batch
             j = 1;
+            shuffled_batch = randperm(n/n_batch); % new epoch - new shuffle
         end
 
         [Ws, bs] = MiniBatchGD(Xbatch, Ybatch, eta, Ws, bs, lambda);
@@ -204,6 +206,7 @@ for l=0:cycles-1
         j = j + 1;
         if j > n/n_batch
             j = 1;
+            shuffled_batch = randperm(n/n_batch); % new epoch - new shuffle
         end
 
         [Ws, bs] = MiniBatchGD(Xbatch, Ybatch, eta, Ws, bs, lambda);
