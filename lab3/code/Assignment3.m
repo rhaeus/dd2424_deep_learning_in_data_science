@@ -142,40 +142,27 @@ function testGradients(X_train, Y_train, NetParams, lambda)
 
 disp('compute grads num')
 
-grads = ComputeGradsNumSlow(X_train(:, 1:2), Y_train(:, 1:2), NetParams, lambda, 1e-5);
-save numgrads3layer.mat grads
-% load numgrads2layer.mat
+% nGrads = ComputeGradsNumSlow(X_train(:, 1:2), Y_train(:, 1:2), NetParams, lambda, 1e-5);
+% save numgrads3layer.mat nGrads
+load numgrads3layer.mat
 
 disp('compute grads analytic')
-[P, Xs, Ss, Shats, vs, mus] = EvaluateClassifier(X_train(:, 1:2), NetParams);
+[P, Xs, BnParams] = EvaluateClassifier(X_train(:, 1:2), NetParams);
 disp('evaluate done')
 
-[grad_W, grad_b, grad_gammas, grad_betas] = ComputeGradients(Xs, Y_train(:, 1:2), P, NetParams.W, Ss, Shats, mus, vs, NetParams.gammas, NetParams.betas, lambda);
+[grads] = ComputeGradients(Xs, Y_train(:, 1:2), P, NetParams, BnParams, lambda);
 disp('done')
 
 [k, ~] = size(Xs);
-% grad_betas{1}
 
-ngrad_W = grads.W;
-ngrad_b = grads.b;
-ngrad_gammas = grads.gammas;
-ngrad_betas = grads.betas;
-
-disp('size W, b, gamma, beta')
-size(ngrad_W)
-size(ngrad_b)
-size(ngrad_gammas)
-size(ngrad_betas)
 
 for i = 1:k
-%     ngrad_W{i}(:,1:8) 
-%     grad_W{i}(:,1:8) 
-    diff_W = abs(ngrad_W{i} - grad_W{i});
-    diff_b = abs(ngrad_b{i} - grad_b{i});
+    diff_W = abs(nGrads.W{i} - grads.W{i});
+    diff_b = abs(nGrads.b{i} - grads.b{i});
     
     if i < k
-        diff_gamma = abs(ngrad_gammas{i} - grad_gammas{i});
-        diff_beta = abs(ngrad_betas{i} - grad_betas{i});
+        diff_gamma = abs(nGrads.gammas{i} - grads.gammas{i});
+        diff_beta = abs(nGrads.betas{i} - grads.betas{i});
     end
 
     fprintf('layer %d:\n', i);
@@ -460,65 +447,76 @@ c = (G2 .* D) * One;
 G_batch = G1 - (1/n) *(G1 * One)* One' - (1/n) * D .* (c*One');
 end
 
-function [grad_Ws, grad_bs, grad_gammas, grad_betas] = ComputeGradients(Xs, Y, P, Ws, Ss, shats, mus, vs, gammas, betas, lambda)
+function [Grads] = ComputeGradients(Xs, Y, P, NetParams, BnParams, lambda)
 [K,n] = size(P);
-[k, ~] = size(Ws);
+[k, ~] = size(NetParams.W);
 
-grad_Ws = cell(k, 1);
-grad_bs = cell(k, 1);
-grad_gammas = cell(k-1, 1);
-grad_betas = cell(k-1, 1);
+Grads.W = cell(k, 1);
+Grads.b = cell(k, 1);
+Grads.gammas = cell(k-1, 1);
+Grads.betas = cell(k-1, 1);
 
 % Propagate the gradient through the loss and softmax operations
 G_batch = -(Y - P); %Kxn
 One = ones(n,1);
 
-% The gradients of J w.r.t. bias vector b k and W k
-grad_Ws{k} = (G_batch * Xs{k}') / n + 2 * lambda * Ws{k};
-grad_bs{k} = (G_batch * One) / n;
+if NetParams.use_bn
+    % The gradients of J w.r.t. bias vector b k and W k
+    Grads.W{k} = (G_batch * Xs{k}') / n + 2 * lambda * NetParams.W{k};
+    Grads.b{k} = (G_batch * One) / n;
 
-% Propagate G batch to the previous layer
-G_batch = Ws{k}' * G_batch;
-G_batch = G_batch .* (Xs{k} > 0);
+    % Propagate G batch to the previous layer
+    G_batch = NetParams.W{k}' * G_batch;
+    G_batch = G_batch .* (Xs{k} > 0);
 
 
-for l=k-1:-1:1
-    % 1. Compute gradient for the scale and offset parameters for layer l:
-    grad_gammas{l} = ((G_batch .* shats{l}) * One) / n;
-    grad_betas{l} = (G_batch * One) / n;
-    
-    % 2. Propagate the gradients through the scale and shift
-    G_batch = G_batch .* (gammas{l} * One');
-    
-    % 3. Propagate G batch through the batch normalization
-    G_batch =  BatchNormBackPass(G_batch, Ss{l}, mus{l}, vs{l});
-    
-    % 4. The gradients of J w.r.t. bias vector b l and W l
-    % Kxn * nxd = Kxd
-    grad_Ws{l} = (G_batch * Xs{l}') / n + 2 * lambda * Ws{l};
-    grad_bs{l} = (G_batch * One) / n;
-    
-    % 5. If l > 1 propagate G batch to the previous layer
-    if l > 1
-        % Propagate G batch to the previous layer
-        G_batch = Ws{l}' * G_batch;
+    for l=k-1:-1:1
+        % 1. Compute gradient for the scale and offset parameters for layer l:
+        Grads.gammas{l} = ((G_batch .* BnParams.S_hat{l}) * One) / n;
+        Grads.betas{l} = (G_batch * One) / n;
+
+        % 2. Propagate the gradients through the scale and shift
+        G_batch = G_batch .* (NetParams.gammas{l} * One');
+
+        % 3. Propagate G batch through the batch normalization
+        G_batch =  BatchNormBackPass(G_batch, BnParams.S{l}, BnParams.mu{l}, BnParams.var{l});
+
+        % 4. The gradients of J w.r.t. bias vector b l and W l
+        % Kxn * nxd = Kxd
+        Grads.W{l} = (G_batch * Xs{l}') / n + 2 * lambda * NetParams.W{l};
+        Grads.b{l} = (G_batch * One) / n;
+
+        % 5. If l > 1 propagate G batch to the previous layer
+        if l > 1
+            % Propagate G batch to the previous layer
+            G_batch = NetParams.W{l}' * G_batch;
+            G_batch = G_batch .* (Xs{l} > 0);
+        end
+    end
+else
+    for l=k:-1:2
+        % Kxn * nxd = Kxd
+        Grads.W{l} = (G_batch * Xs{l}') / n + 2 * lambda * NetParams.W{l};
+        Grads.b{l} = (G_batch * One) / n;
+
+        G_batch = NetParams.W{l}' * G_batch;
         G_batch = G_batch .* (Xs{l} > 0);
     end
+
+    Grads.W{1} = (G_batch * Xs{1}') / n + 2 * lambda * NetParams.W{1};
+    Grads.b{1} = (G_batch * One) / n;
 end
 
 end
 
 function J = ComputeCost(X, Y, NetParams, lambda)
-Ws = NetParams.W;
-bs = NetParams.b;
-
 [d,n] = size(X);
-[P, Xs, Ss, Shats, vs, mus] = EvaluateClassifier(X, NetParams); % Kxn
+[P, Xs, BnParams] = EvaluateClassifier(X, NetParams); % Kxn
 
 reg = 0;
-[k, ~] = size(Ws);
+[k, ~] = size(NetParams.W);
 for i=1:k
-    reg = reg + sum(sum(Ws{i} .* Ws{i}));
+    reg = reg + sum(sum(NetParams.W{i} .* NetParams.W{i}));
 end
 
 l = mean(-mean(sum(Y .* log(P)), 1));
@@ -530,21 +528,21 @@ d = diag(var+eps) ^ (-1/2);
 shat = d * (s-mu);
 end
 
-function [P, Xs, S, S_hat, variance, mu] = EvaluateClassifier(X, NetParams, varargin)
+function [P, Xs, BnParams] = EvaluateClassifier(X, NetParams, varargin)
 n = size(X, 2);
 
 [k, ~] = size(NetParams.W);
 Xs = cell(k, 1);
-S = cell(k, 1);
+BnParams.S = cell(k, 1);
 
-S_hat = cell(k-1, 1);
+BnParams.S_hat = cell(k-1, 1);
 
 if nargin == 3
-    mu = varargin{1};
-    variance = varargin{2};
+    BnParams.mu = varargin{1};
+    BnParams.var = varargin{2};
 else
-    variance = cell(k-1, 1);
-    mu = cell(k-1, 1);
+    BnParams.var = cell(k-1, 1);
+    BnParams.mu = cell(k-1, 1);
 end
 
 
@@ -557,13 +555,13 @@ for i = 1:k-1
     if NetParams.use_bn
         
         if nargin == 3
-            s_hat_i = BatchNormalize(s_i, mu{i}, variance{i});
+            s_hat_i = BatchNormalize(s_i, BnParams.mu{i}, BnParams.var{i});
         else
             mu_i = mean(s_i, 2);
             var_i = var(s_i, 0, 2);
             var_i = var_i * (n-1) / n;
-            variance{i} = var_i;
-            mu{i} = mu_i;
+            BnParams.var{i} = var_i;
+            BnParams.mu{i} = mu_i;
             
             s_hat_i = BatchNormalize(s_i, mu_i, var_i);
         end
@@ -571,7 +569,7 @@ for i = 1:k-1
         s_tilde_i = NetParams.gammas{i} .* s_hat_i + NetParams.betas{i};
         next_x = max(0, s_tilde_i);
         
-        S_hat{i} = s_hat_i;
+        BnParams.S_hat{i} = s_hat_i;
         
 %         var_i
 %         mu_i
@@ -581,12 +579,12 @@ for i = 1:k-1
     else
         next_x = max(0, s_i);
     end
-    S{i} = s_i;
+    BnParams.S{i} = s_i;
     Xs{i+1} = next_x;
 end
 
 s_k = NetParams.W{k} * Xs{k} + NetParams.b{k};
-S{k} = s_k;
+BnParams.S{k} = s_k;
 
 P = exp(s_k) ./ sum(exp(s_k)); %Kxn
 
