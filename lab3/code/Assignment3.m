@@ -64,67 +64,15 @@ eta_min = 1e-5;
 eta_max = 1e-1;
 % n_s = 2*floor(n / n_batch);
 n_s = 5*45000/n_batch;
-cycles = 3;
+cycles = 2;
 
 % testGradients(X_train, Y_train, NetParams, 0);
 
-%%%%%%%%%%%%%%%%%%%%%%%
-% random lambda search
-%%%%%%%%%%%%%%%%%%%%%%%
-
-% l_min=-5;
-% l_max=-2;
-% 
-% lambda_count = 20;
-% lambdas = zeros(lambda_count,1);
-
-% for i=1:lambda_count
-%     l = l_min + (l_max - l_min)*rand(1, 1);
-%     lambdas(i) = 10^l;
-% end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% uniform lambda search
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% l_min = 10^-5;
-% l_max = 10^-1;
-% step = (l_max - l_min)/lambda_count;
-% for i=0:lambda_count-1
-%     lambdas(i+1) = l_min + i*step;
-% end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% perform lambda search
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% ex=4;
-% name = sprintf('result_pics/ex%d_lambda_fine_search_random_1.csv', ex);
-% delete(name);
-% fid = fopen(name, 'a+');
-% fprintf(fid, 'l_min=%0.5f;l_max=%0.5f;cycles=%d;n_s=%d\n', l_min, l_max, cycles, n_s);
-% fprintf(fid, 'lambda;accuracy_validation;accuracy_test\n');
-% 
-% for i=1:lambda_count
-%     fprintf('%d/%d: lambda=%0.5f\n', i, lambda_count,lambdas(i));
-%     [Ws, bs] = InitModel(m,d,K);
-%     [acc_valid, acc_test] = train(X_train, Y_train, X_valid, y_valid,X_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambdas(i));
-%     fprintf('accuracy_validation = %0.5f\n', acc_valid);
-%     fprintf('accuracy_test = %0.5f\n', acc_test);
-%     fprintf(fid, '%0.5f;%0.5f;%0.5f\n', lambdas(i), acc_valid, acc_test);
-% end
-% fclose(fid);
-
-%%%%%%%%%%%%%%%%%%%%
-% final training
-%%%%%%%%%%%%%%%%%%%%
-% lambda = 0.005;
-% [acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch, lambda);
-
 % [bestLambda] = lambdaSearch(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, 2, n_s, eta_max, eta_min, n_batch);
 % [NetParams] = InitModel(ms,d,K);
-bestLambda=0.00564;
-[acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch, bestLambda, true);
+% bestLambda=0.00564;
+lambda = 0.005;
+[acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch, lambda, true);
 
 disp('done')
 
@@ -312,7 +260,7 @@ x_axis = zeros(amount, 1);
 etas = zeros(cycles*updates_per_cycle, 1);
 
 if log
-name = sprintf('result_pics/values_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.csv', lambda, n_s,cycles,k, NetParams.use_bn);
+name = sprintf('result_pics/values_lambda=%0.5f_ns=%d_cycles=%d_k=%d_sig=%0.5f_bn=%d.csv', lambda, n_s,cycles,k, NetParams.sig, NetParams.use_bn);
 delete(name);
 fid = fopen(name, 'a+');
 fprintf(fid, 'cycle;count;loss_training;loss_validation;cost_training;cost_validation;accuracy_training;accuracy_validation;accuracy_test\n');
@@ -496,7 +444,7 @@ figure(2);
 plot(x_axis, loss_training, x_axis, loss_validation);
 title('Loss')
 legend('Training', 'Validation')
-name = sprintf('result_pics/loss_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.png', lambda, n_s, cycles,k, NetParams.use_bn);
+name = sprintf('result_pics/loss_lambda=%0.5f_ns=%d_cycles=%d_k=%d_sig=%0.5f_bn=%d.png', lambda, n_s, cycles,k, NetParams.sig, NetParams.use_bn);
 saveas(gcf,name);
 
  % evolution of the cost as diagram
@@ -504,7 +452,7 @@ figure(3);
 plot(x_axis, cost_training, x_axis, cost_validation);
 title('Cost')
 legend('Training', 'Validation')
-name = sprintf('result_pics/cost_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.png', lambda, n_s, cycles,k, NetParams.use_bn);
+name = sprintf('result_pics/cost_lambda=%0.5f_ns=%d_cycles=%d_k=%d_sig=%0.5f_bn=%d.png', lambda, n_s, cycles,k, NetParams.sig, NetParams.use_bn);
 saveas(gcf,name);
 
 % evolution of the accuracy as diagram
@@ -512,16 +460,16 @@ figure(4);
 plot(x_axis, accuracy_training, x_axis, accuracy_validation, x_axis, accuracy_test);
 title('Accuracy')
 legend('Training', 'Validation','Test')
-name = sprintf('result_pics/accuracy_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.png', lambda, n_s, cycles,k, NetParams.use_bn);
+name = sprintf('result_pics/accuracy_lambda=%0.5f_ns=%d_cycles=%d_k=%d_sig=%0.5f_bn=%d.png', lambda, n_s, cycles,k, NetParams.sig, NetParams.use_bn);
 saveas(gcf,name);
 
-%evolution of the eta as diagram
-figure(5);
-x=1:count;
-plot(x, etas);
-title('eta')
-name = sprintf('result_pics/eta_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.png', lambda, n_s, cycles,k, NetParams.use_bn);
-saveas(gcf,name);
+% %evolution of the eta as diagram
+% figure(5);
+% x=1:count;
+% plot(x, etas);
+% title('eta')
+% name = sprintf('result_pics/eta_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.png', lambda, n_s, cycles,k, NetParams.use_bn);
+% saveas(gcf,name);
 end
 
 end
@@ -536,15 +484,20 @@ k = n_hidden + 1; %k is number of layers
 NetParams.W = cell(k, 1);
 NetParams.b = cell(k, 1);
 
-NetParams.W{1} = randn(ms(1),d)/sqrt(d);
+NetParams.sig = 1e-4;
+
+% NetParams.W{1} = randn(ms(1),d)/sqrt(d);
+NetParams.W{1} = randn(ms(1),d)*NetParams.sig;
 NetParams.b{1} = zeros(ms(1),1);
 
 for i=2:k-1
-    NetParams.W{i} = randn(ms(i),ms(i-1))/sqrt(ms(i-1));
+%     NetParams.W{i} = randn(ms(i),ms(i-1))/sqrt(ms(i-1));
+    NetParams.W{i} = randn(ms(i),ms(i-1))*NetParams.sig;
     NetParams.b{i} = zeros(ms(i),1);
 end
 
-NetParams.W{k} = randn(K,ms(k-1))/sqrt(ms(k-1));
+% NetParams.W{k} = randn(K,ms(k-1))/sqrt(ms(k-1));
+NetParams.W{k} = randn(K,ms(k-1))*NetParams.sig;
 NetParams.b{k} = zeros(K,1);
 
 NetParams.gammas = cell(n_hidden, 1);
