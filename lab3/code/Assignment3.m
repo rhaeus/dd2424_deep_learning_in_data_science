@@ -53,34 +53,20 @@ disp('init model')
 ms = [50;50]; % number of nodes in hidden layer
 
 
-[Ws, bs] = InitModel(ms,d,K);
+[NetParams] = InitModel(ms,d,K);
+NetParams.use_bn = true;
 % size(ms)
 % size(Ws)
 
-[n_hidden, ~] = size(ms);
-
-gammas = cell(n_hidden, 1);
-betas = cell(n_hidden, 1);
-
-for i=1:n_hidden
-    gammas{i} = ones(ms(i),1);
-    betas{i} = zeros(ms(i),1);
-end
-
-NetParams.W = Ws;
-NetParams.b = bs;
-NetParams.use_bn = true;
-NetParams.gammas = gammas;
-NetParams.betas = betas;
 
 n_batch = 100;
 eta_min = 1e-5; 
 eta_max = 1e-1;
 % n_s = 2*floor(n / n_batch);
 n_s = 5*45000/n_batch;
-cycles = 2;
+cycles = 3;
 
-testGradients(X_train, Y_train, NetParams, 0);
+% testGradients(X_train, Y_train, NetParams, 0);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % random lambda search
@@ -133,10 +119,107 @@ testGradients(X_train, Y_train, NetParams, 0);
 % final training
 %%%%%%%%%%%%%%%%%%%%
 % lambda = 0.005;
-% [acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambda);
+% [acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch, lambda);
 
+% [bestLambda] = lambdaSearch(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, 2, n_s, eta_max, eta_min, n_batch);
+% [NetParams] = InitModel(ms,d,K);
+bestLambda=0.00564;
+[acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch, bestLambda, true);
 
 disp('done')
+
+function [bestLambda] = lambdaSearch(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch)
+name = sprintf('lambda_search.csv');
+delete(name);
+fid = fopen(name, 'a+');
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% uniform lambda search
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+lambda_count = 20;
+lambdas = zeros(lambda_count,2);
+l_min = 10^-5;
+l_max = 10^-1;
+step = (l_max - l_min)/(lambda_count-1);
+for i=0:lambda_count-1
+    lambdas(i+1,1) = l_min + i*step;
+end
+
+fprintf('########searching for lambda in uniform grid between %0.5f and %0.5f, step %0.5f\n', l_min, l_max, step);
+fprintf(fid, 'uniform grid search between %0.5f and %0.5f\n', l_min, l_max);
+bestIndex = 1;
+bestAcc = 0;
+
+for i=1:lambda_count
+    fprintf('Run %d: testing lambda=%0.5f\n',i, lambdas(i,1));
+    [acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch, lambdas(i,1), false);
+    fprintf('acc=%0.5f\n', acc_valid);
+    fprintf(fid, '%0.5f;%0.5f\n', lambdas(i,1), acc_valid);
+    lambdas(i, 2) = acc_valid;
+    if acc_valid > bestAcc
+        bestAcc = acc_valid;
+        bestIndex = i;
+    end
+end
+
+fprintf('best result: lambda=%0.5f, acc=%0.5f\n', lambdas(bestIndex,1), lambdas(bestIndex, 2));
+fprintf(fid, 'best result: lambda=%0.5f, acc=%0.5f\n', lambdas(bestIndex,1), lambdas(bestIndex, 2));
+
+%%%%%%%%%%%%%%%%%%%%%%%
+% random lambda search
+%%%%%%%%%%%%%%%%%%%%%%%
+% search randomly between [best_lambda-1, best_lambda+1]
+lower = bestIndex - 1;
+if lower < 1
+    lower = 1;
+end
+
+upper = bestIndex + 1;
+if upper > lambda_count
+    upper = lambda_count;
+end
+% fprintf('search randomly in lambda=%0.5f to lambda=0.5f\n', lambdas(lower,1), lambdas(upper, 1));
+
+
+exp_min = floor(log10(lambdas(lower,1)));
+exp_max = floor(log10(lambdas(upper,1)));
+if exp_min == exp_max
+    exp_min = exp_min -1;
+    exp_max = exp_max + 1;
+end
+
+fprintf('##########search randomly in lambda=%0.5f to lambda=%0.5f\n', 10^exp_min, 10^exp_max);
+
+lambda_count = 20;
+lambdas = zeros(lambda_count,2);
+
+for i=1:lambda_count
+    l = exp_min + (exp_max - exp_min)*rand(1, 1);
+    lambdas(i,1) = 10^l;
+end
+
+bestIndex = 1;
+bestAcc = 0;
+
+for i=1:lambda_count
+    fprintf('Run %d: testing lambda=%0.5f\n', i, lambdas(i,1));
+    [acc_valid, acc_test] = train(X_train, Y_train, y_train,X_valid, Y_valid, y_valid,X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch, lambdas(i,1), false);
+    fprintf('acc=%0.5f\n', acc_valid);
+    fprintf(fid, '%0.5f;%0.5f\n', lambdas(i,1), acc_valid);
+    lambdas(i, 2) = acc_valid;
+    if acc_valid > bestAcc
+        bestAcc = acc_valid;
+        bestIndex = i;
+    end
+end
+
+fprintf('best result: lambda=%0.5f, acc=%0.5f\n', lambdas(bestIndex,1), lambdas(bestIndex, 2));
+fprintf(fid, 'best result: lambda=%0.5f, acc=%0.5f\n', lambdas(bestIndex,1), lambdas(bestIndex, 2));
+
+bestLambda = lambdas(bestIndex,1);
+fclose(fid);
+end
 
 function testGradients(X_train, Y_train, NetParams, lambda)
 
@@ -169,6 +252,7 @@ for i = 1:k
 
     if all(diff_W < 1e-5)
         disp('W ok')
+        disp(max(max(diff_W)))
     else
         disp('W not ok')
         disp(max(max(diff_W)))
@@ -176,6 +260,7 @@ for i = 1:k
 
     if all(diff_b < 1e-5)
         disp('b ok')
+        disp(max(max(diff_b)))
     else
         disp('b not ok')
         disp(max(max(diff_b)))
@@ -184,6 +269,7 @@ for i = 1:k
     if i < k
         if all(diff_gamma < 1e-5)
             disp('gamma ok')
+            disp(max(max(diff_gamma)))
         else
             disp('gamma not ok')
             disp(max(max(diff_gamma)))
@@ -191,6 +277,7 @@ for i = 1:k
 
         if all(diff_beta < 1e-5)
             disp('beta ok')
+            disp(max(max(diff_beta)))
         else
             disp('beta not ok')
             disp(max(max(diff_beta)))
@@ -201,9 +288,9 @@ end
 end
 
 
-function [acc_valid, acc_test] = train(X_train, Y_train,y_train, X_valid,Y_valid, y_valid, X_test, Y_test, y_test, Ws, bs, cycles, n_s, eta_max, eta_min, n_batch, lambda)
+function [acc_valid, acc_test] = train(X_train, Y_train,y_train, X_valid,Y_valid, y_valid, X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch, lambda, log)
 [d, n] = size(X_train);
-[k, ~] = size(Ws);
+[k, ~] = size(NetParams.W);
 
 updates_per_cycle = 2*n_s;
 snapshots_per_cycle = 10;
@@ -224,10 +311,15 @@ accuracy_test = zeros(amount, 1);
 x_axis = zeros(amount, 1);
 etas = zeros(cycles*updates_per_cycle, 1);
 
-name = sprintf('result_pics/values_lambda=%0.5f_ns=%d_cycles=%d_k=%d.csv', lambda, n_s,cycles,k);
+if log
+name = sprintf('result_pics/values_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.csv', lambda, n_s,cycles,k, NetParams.use_bn);
 delete(name);
 fid = fopen(name, 'a+');
 fprintf(fid, 'cycle;count;loss_training;loss_validation;cost_training;cost_validation;accuracy_training;accuracy_validation;accuracy_test\n');
+end
+
+initAvg = true;
+alpha = 0.9;
 
 
 shuffled_batch = randperm(n/n_batch);
@@ -250,9 +342,22 @@ for l=0:cycles-1
             shuffled_batch = randperm(n/n_batch); % new epoch - new shuffle
         end
 
-        [Ws, bs] = MiniBatchGD(Xbatch, Ybatch, eta, Ws, bs, lambda);
+        [NetParams, BnParams] = MiniBatchGD(Xbatch, Ybatch, eta, NetParams, lambda);
+        if NetParams.use_bn
+            if initAvg
+                mu_avg = BnParams.mu;
+                var_avg = BnParams.var;
+                initAvg = false;
+            else
+                for layer = 1:length(mu_avg)
+                    mu_avg{layer} = alpha * BnParams.mu{layer} + (1 - alpha) * BnParams.mu{layer};
+                    var_avg{layer} = alpha * BnParams.var{layer} + (1 - alpha) * BnParams.var{layer};
+                end
+            end
+        end
         
         count = count + 1;
+        if log
         if count == 1 || mod(count, snapshot_step) == 0 
             if count == 1
                 index = 1;
@@ -262,20 +367,33 @@ for l=0:cycles-1
             
             % A loss function/error function is for a single training example/input. 
             % A cost function, on the other hand, is the average loss over the entire training dataset.
-            loss_training(index) = ComputeCost(X_train(:,1:n_batch), Y_train(:,1:n_batch), Ws, bs, lambda);
-            loss_validation(index) = ComputeCost(X_valid(:,1:n_batch), Y_valid(:,1:n_batch), Ws, bs, lambda);
-            
-            cost_training(index) = ComputeCost(X_train, Y_train, Ws, bs, lambda);
-            cost_validation(index) = ComputeCost(X_valid, Y_valid, Ws, bs, lambda);
-            
-            accuracy_training(index) = ComputeAccuracy(X_train, y_train, Ws, bs);
-            accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, Ws, bs);
-            accuracy_test(index) = ComputeAccuracy(X_test, y_test, Ws, bs);
+            if NetParams.use_bn
+                loss_training(index) = ComputeCost(X_train(:,1:n_batch), Y_train(:,1:n_batch), NetParams, lambda, mu_avg, var_avg);
+                loss_validation(index) = ComputeCost(X_valid(:,1:n_batch), Y_valid(:,1:n_batch), NetParams, lambda, mu_avg, var_avg);
+
+                cost_training(index) = ComputeCost(X_train, Y_train, NetParams, lambda, mu_avg, var_avg);
+                cost_validation(index) = ComputeCost(X_valid, Y_valid,NetParams, lambda, mu_avg, var_avg);
+
+                accuracy_training(index) = ComputeAccuracy(X_train, y_train, NetParams, mu_avg, var_avg);
+                accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, NetParams, mu_avg, var_avg);
+                accuracy_test(index) = ComputeAccuracy(X_test, y_test, NetParams, mu_avg, var_avg);
+            else
+                loss_training(index) = ComputeCost(X_train(:,1:n_batch), Y_train(:,1:n_batch), NetParams, lambda);
+                loss_validation(index) = ComputeCost(X_valid(:,1:n_batch), Y_valid(:,1:n_batch), NetParams, lambda);
+
+                cost_training(index) = ComputeCost(X_train, Y_train, NetParams, lambda);
+                cost_validation(index) = ComputeCost(X_valid, Y_valid,NetParams, lambda);
+
+                accuracy_training(index) = ComputeAccuracy(X_train, y_train, NetParams);
+                accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, NetParams);
+                accuracy_test(index) = ComputeAccuracy(X_test, y_test, NetParams);
+            end
             
             x_axis(index) = count;
 
             fprintf(fid, '%d;%d;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f\n', l+1, x_axis(index), loss_training(index), loss_validation(index), cost_training(index), cost_validation(index), accuracy_training(index), accuracy_validation(index), accuracy_test(index));
-        end     
+        end   
+        end
     end
     
     for t = (2*l+1)*n_s:2*(l+1)*n_s-1
@@ -292,9 +410,22 @@ for l=0:cycles-1
             shuffled_batch = randperm(n/n_batch); % new epoch - new shuffle
         end
 
-        [Ws, bs] = MiniBatchGD(Xbatch, Ybatch, eta, Ws, bs, lambda);
+        [NetParams, BnParams] = MiniBatchGD(Xbatch, Ybatch, eta, NetParams, lambda);
+        if NetParams.use_bn
+            if initAvg
+                mu_avg = BnParams.mu;
+                var_avg = BnParams.var;
+                initAvg = false;
+            else
+               for layer = 1:length(mu_avg)
+                    mu_avg{layer} = alpha * BnParams.mu{layer} + (1 - alpha) * BnParams.mu{layer};
+                    var_avg{layer} = alpha * BnParams.var{layer} + (1 - alpha) * BnParams.var{layer};
+                end
+            end
+        end
         
         count = count + 1;
+        if log
         if count == 1 || mod(count, snapshot_step) == 0 
             if count == 1
                 index = 1;
@@ -304,30 +435,52 @@ for l=0:cycles-1
             
             % A loss function/error function is for a single training example/input. 
             % A cost function, on the other hand, is the average loss over the entire training dataset.
-            loss_training(index) = ComputeCost(X_train(:,1:n_batch), Y_train(:,1:n_batch), Ws, bs, lambda);
-            loss_validation(index) = ComputeCost(X_valid(:,1:n_batch), Y_valid(:,1:n_batch), Ws, bs, lambda);
-            
-            cost_training(index) = ComputeCost(X_train, Y_train, Ws, bs, lambda);
-            cost_validation(index) = ComputeCost(X_valid, Y_valid, Ws, bs, lambda);
-            
-            accuracy_training(index) = ComputeAccuracy(X_train, y_train, Ws, bs);
-            accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, Ws, bs);
-            accuracy_test(index) = ComputeAccuracy(X_test, y_test, Ws, bs);
+            if NetParams.use_bn
+                loss_training(index) = ComputeCost(X_train(:,1:n_batch), Y_train(:,1:n_batch), NetParams, lambda, mu_avg, var_avg);
+                loss_validation(index) = ComputeCost(X_valid(:,1:n_batch), Y_valid(:,1:n_batch), NetParams, lambda, mu_avg, var_avg);
+
+                cost_training(index) = ComputeCost(X_train, Y_train, NetParams, lambda, mu_avg, var_avg);
+                cost_validation(index) = ComputeCost(X_valid, Y_valid,NetParams, lambda, mu_avg, var_avg);
+
+                accuracy_training(index) = ComputeAccuracy(X_train, y_train, NetParams, mu_avg, var_avg);
+                accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, NetParams, mu_avg, var_avg);
+                accuracy_test(index) = ComputeAccuracy(X_test, y_test, NetParams, mu_avg, var_avg);
+            else
+                loss_training(index) = ComputeCost(X_train(:,1:n_batch), Y_train(:,1:n_batch), NetParams, lambda);
+                loss_validation(index) = ComputeCost(X_valid(:,1:n_batch), Y_valid(:,1:n_batch), NetParams, lambda);
+
+                cost_training(index) = ComputeCost(X_train, Y_train, NetParams, lambda);
+                cost_validation(index) = ComputeCost(X_valid, Y_valid,NetParams, lambda);
+
+                accuracy_training(index) = ComputeAccuracy(X_train, y_train, NetParams);
+                accuracy_validation(index) = ComputeAccuracy(X_valid, y_valid, NetParams);
+                accuracy_test(index) = ComputeAccuracy(X_test, y_test, NetParams);
+            end
             
             x_axis(index) = count;
 
             fprintf(fid, '%d;%d;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f;%0.5f\n', l+1, x_axis(index), loss_training(index), loss_validation(index), cost_training(index), cost_validation(index), accuracy_training(index), accuracy_validation(index), accuracy_test(index));
-        end     
+        end  
+        end
         
     end
 end
 
-acc_valid = ComputeAccuracy(X_valid, y_valid, Ws, bs);
-acc_test = ComputeAccuracy(X_test, y_test, Ws, bs);
+if NetParams.use_bn
+    acc_valid = ComputeAccuracy(X_valid, y_valid, NetParams, mu_avg, var_avg);
+    acc_test = ComputeAccuracy(X_test, y_test, NetParams, mu_avg, var_avg);
 
-cost_train = ComputeCost(X_train, Y_train, Ws, bs, lambda);
-cost_valid = ComputeCost(X_valid, Y_valid, Ws, bs, lambda);
-cost_test = ComputeCost(X_test, Y_test, Ws, bs, lambda);
+    cost_train = ComputeCost(X_train, Y_train, NetParams, lambda, mu_avg, var_avg);
+    cost_valid = ComputeCost(X_valid, Y_valid, NetParams, lambda, mu_avg, var_avg);
+    cost_test = ComputeCost(X_test, Y_test, NetParams, lambda, mu_avg, var_avg);
+else
+    acc_valid = ComputeAccuracy(X_valid, y_valid, NetParams);
+    acc_test = ComputeAccuracy(X_test, y_test, NetParams);
+
+    cost_train = ComputeCost(X_train, Y_train, NetParams, lambda);
+    cost_valid = ComputeCost(X_valid, Y_valid, NetParams, lambda);
+    cost_test = ComputeCost(X_test, Y_test, NetParams, lambda);
+end
 
 % terminal output
 fprintf('accuracy_validation = %0.5f\n', acc_valid);
@@ -336,13 +489,14 @@ fprintf('cost_train = %0.5f\n', cost_train);
 fprintf('cost_valid = %0.5f\n', cost_valid);
 fprintf('cost_test = %0.5f\n', cost_test);
 
+if log
 %plot
 % evolution of the loss as diagram
 figure(2);
 plot(x_axis, loss_training, x_axis, loss_validation);
 title('Loss')
 legend('Training', 'Validation')
-name = sprintf('result_pics/loss_lambda=%0.5f_ns=%d_cycles=%d_k=%d.png', lambda, n_s, cycles,k);
+name = sprintf('result_pics/loss_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.png', lambda, n_s, cycles,k, NetParams.use_bn);
 saveas(gcf,name);
 
  % evolution of the cost as diagram
@@ -350,7 +504,7 @@ figure(3);
 plot(x_axis, cost_training, x_axis, cost_validation);
 title('Cost')
 legend('Training', 'Validation')
-name = sprintf('result_pics/cost_lambda=%0.5f_ns=%d_cycles=%d_k=%d.png', lambda, n_s, cycles,k);
+name = sprintf('result_pics/cost_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.png', lambda, n_s, cycles,k, NetParams.use_bn);
 saveas(gcf,name);
 
 % evolution of the accuracy as diagram
@@ -358,7 +512,7 @@ figure(4);
 plot(x_axis, accuracy_training, x_axis, accuracy_validation, x_axis, accuracy_test);
 title('Accuracy')
 legend('Training', 'Validation','Test')
-name = sprintf('result_pics/accuracy_lambda=%0.5f_ns=%d_cycles=%d_k=%d.png', lambda, n_s, cycles,k);
+name = sprintf('result_pics/accuracy_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.png', lambda, n_s, cycles,k, NetParams.use_bn);
 saveas(gcf,name);
 
 %evolution of the eta as diagram
@@ -366,77 +520,62 @@ figure(5);
 x=1:count;
 plot(x, etas);
 title('eta')
-name = sprintf('result_pics/eta_lambda=%0.5f_ns=%d_cycles=%d_k=%d.png', lambda, n_s, cycles,k);
+name = sprintf('result_pics/eta_lambda=%0.5f_ns=%d_cycles=%d_k=%d_bn=%d.png', lambda, n_s, cycles,k, NetParams.use_bn);
 saveas(gcf,name);
+end
 
 end
 
 % functions
-function [Ws, bs] = InitModel(ms, d, K)
+function [NetParams] = InitModel(ms, d, K)
 rng(400);
 %Xavier initialization
-[k, ~] = size(ms); %given are k-1 hidden layers
-k = k + 1; %k is number of layers
+[n_hidden, ~] = size(ms); %given are k-1 hidden layers
+k = n_hidden + 1; %k is number of layers
 
-Ws = cell(k, 1);
-bs = cell(k, 1);
+NetParams.W = cell(k, 1);
+NetParams.b = cell(k, 1);
 
-Ws{1} = randn(ms(1),d)/sqrt(d);
-bs{1} = zeros(ms(1),1);
+NetParams.W{1} = randn(ms(1),d)/sqrt(d);
+NetParams.b{1} = zeros(ms(1),1);
 
 for i=2:k-1
-    Ws{i} = randn(ms(i),ms(i-1))/sqrt(ms(i-1));
-    bs{i} = zeros(ms(i),1);
+    NetParams.W{i} = randn(ms(i),ms(i-1))/sqrt(ms(i-1));
+    NetParams.b{i} = zeros(ms(i),1);
 end
 
-Ws{k} = randn(K,ms(k-1))/sqrt(ms(k-1));
-bs{k} = zeros(K,1);
+NetParams.W{k} = randn(K,ms(k-1))/sqrt(ms(k-1));
+NetParams.b{k} = zeros(K,1);
 
-% W2 = randn(m,m)/sqrt(m);
-% b2 = zeros(m,1);
-% 
-% W3 = randn(K,m)/sqrt(m);
-% b3 = zeros(K,1);
+NetParams.gammas = cell(n_hidden, 1);
+NetParams.betas = cell(n_hidden, 1);
 
-% Ws = {W1; W2; W3};
-% bs = {b1; b2;b3};
+for i=1:n_hidden
+    NetParams.gammas{i} = ones(ms(i),1);
+    NetParams.betas{i} = zeros(ms(i),1);
 end
 
+end
 
-function acc = ComputeAccuracy(X, y, Ws, bs)
-[P, Xs] = EvaluateClassifier(X, Ws, bs); % Kxn
+function acc = ComputeAccuracy(X, y, NetParams, varargin)
+if nargin == 5
+    [P, Xs] = EvaluateClassifier(X, NetParams, varargin{1}, varargin{2}); % Kxn
+else
+    [P, Xs] = EvaluateClassifier(X, NetParams); % Kxn
+end
+
 [K,n] = size(P); % 10x10000
 [~, p] = max(P); % p is index of max, 1xn
 acc = sum(p==y) / n;
 end
 
 function [G_batch] = BatchNormBackPass(G_batch, s, mu, v)
-[m, ~] = size(v);
-% epsilon = 1e-10;
 [~,n] = size(G_batch);
 One = ones(n,1);
-
-
-% sigma1 = transpose((v + eps).^(-0.5));
-% sigma2 = transpose((v + eps).^(-1.5));
-
-
 
 sigma1 = ((v + eps).^(-0.5));
 sigma2 = ((v + eps).^(-1.5));
 
-% sigma1 = zeros(m,1);
-% sigma2 = zeros(m,1);
-% 
-% for i=1:m
-%     sigma1(i,1) = (v(i) + eps) .^ (-0.5);
-%     sigma2(i,1) = (v(i) + eps) .^ (-1.5);
-% end
-% sigma1 = sigma1';
-% sigma2 = sigma2';
-
-% size(One')
-% size(sigma1)
 
 G1 = G_batch .* (sigma1 * One');
 G2 = G_batch .* (sigma2 * One');
@@ -509,9 +648,14 @@ end
 
 end
 
-function J = ComputeCost(X, Y, NetParams, lambda)
+function J = ComputeCost(X, Y, NetParams, lambda, varargin)
 [d,n] = size(X);
-[P, Xs, BnParams] = EvaluateClassifier(X, NetParams); % Kxn
+
+if nargin == 6
+    [P, Xs, BnParams] = EvaluateClassifier(X, NetParams, varargin{1}, varargin{2}); % Kxn
+else
+    [P, Xs, BnParams] = EvaluateClassifier(X, NetParams);
+end
 
 reg = 0;
 [k, ~] = size(NetParams.W);
@@ -590,104 +734,6 @@ P = exp(s_k) ./ sum(exp(s_k)); %Kxn
 
 end
 
-% function [P, Xs, S, S_hat, vari, mu] = EvaluateClassifier(X, NetParams)
-% n = size(X, 2);
-% 
-% [k, ~] = size(NetParams.W);
-% Xs = cell(k, 1);
-% S = cell(k, 1);
-% 
-% S_hat = cell(k-1, 1);
-% vari = cell(k-1, 1);
-% mu = cell(k-1, 1);
-% 
-% Xs{1} = X;
-% 
-% for i = 1:k-1
-%     s_i = NetParams.W{i}*X + NetParams.b{i};
-%    
-%     if NetParams.use_bn
-%         mu_s_i = mean(s_i, 2);
-%         var_s_i = var(s_i, 0, 2) * (n-1) / n;
-%         
-%         s_hat_i = BatchNormalize(s_i, mu_s_i, var_s_i);
-%         
-%         % If using validation or test data
-% %         if nargin > 4
-% %             s_hat_i = BatchNormailize(s_i, varargin{1}{1}{1}{i}, varargin{1}{1}{2}{i});
-% %         else
-% %             s_hat_i = BatchNormailize(s_i, mu_s_i, var_s_i);
-% %         end
-%         
-%         s_tilde_i = NetParams.gammas{i} .* s_hat_i + NetParams.betas{i};
-%         X = max(0, s_tilde_i);
-%         
-%         S_hat{i} = s_hat_i;
-%         mu{i} = mu_s_i;
-% %         vari{i} = transpose(var_s_i);
-%         vari{i} = var_s_i;
-%     else
-%         X = max(0, s_i);
-%     end
-%     S{i} = s_i;
-%     Xs{i+1} = X;
-% end
-% 
-% s_k = NetParams.W{k}*X + NetParams.b{k};
-% S{k} = s_k;
-% P = exp(s_k) ./ sum(exp(s_k)); %Kxn
-% % P = zeros(K, n);
-% % for col = 1:n
-% %     P(:,col) = Softmax(s_k(:,col));
-% % end
-% % BNData.S = S;
-% % BNData.S_hat = S_hat;
-% % BNData.mu = mu;
-% % BNData.vari = vari;
-% end
-
-% function [P, Xs, Ss, Shats, vs, mus] = EvaluateClassifier(X, NetParams)
-% Ws = NetParams.W;
-% bs = NetParams.b;
-% gammas = NetParams.gammas;
-% betas = NetParams.betas;
-%     
-% [k, ~] = size(Ws);
-% 
-% Xs = cell(k, 1);
-% Ss = cell(k, 1);
-% 
-% Shats = cell(k-1, 1);
-% vs = cell(k-1, 1);
-% mus = cell(k-1, 1);
-% 
-% Xs{1} = X;
-% 
-% % alpha = 0.9;
-% 
-% for i=1:k-1
-%     s = Ws{i} * Xs{i} + bs{i}; % mxn
-%     
-%     Ss{i} = s;
-%     [shat, mu, v] = BatchNormalize(s);
-%     Shats{i} = shat;
-%     mus{i} = mu;
-%     vs{i} = v;
-%     
-% %     mu_avgs{i} = alpha * mu_avgs{i} + (1 - alpha) * mu;
-% %     v_avgs{i} = alpha * v_avgs{i} + (1 - alpha) * v;
-%     
-%     stilde = gammas{i} .* shat + betas{i};
-%     
-%     xnext = max(0, stilde); % mxn
-%     Xs{i+1} = xnext;
-% end
-% 
-% s = Ws{k} * Xs{k} + bs{k}; %Kxn
-% Ss{k} = s;
-% P = exp(s) ./ sum(exp(s)); %Kxn
-% end
-
 function [X, Y, y] = LoadBatch(filename)
 A = load(filename);
 [n, d] = size(A.data); % nxd
@@ -707,17 +753,22 @@ for i = 1:n
 end
 end
 
-function [Ws_star, bs_star] = MiniBatchGD(X, Y, eta, Ws, bs, lambda)
-[P, Xs] = EvaluateClassifier(X, Ws, bs); % Kxn
-[grad_Ws, grad_bs] = ComputeGradients(Xs, Y, P, Ws, lambda);
+function [NetParams, BnParams] = MiniBatchGD(X, Y, eta, NetParams, lambda)
+[P, Xs, BnParams] = EvaluateClassifier(X, NetParams); % Kxn
+[grads] = ComputeGradients(Xs, Y, P, NetParams, BnParams, lambda);
 
-[k, ~] = size(Ws);
-Ws_star = cell(k, 1);
-bs_star = cell(k, 1);
+[k, ~] = size(NetParams.W);
+% Ws_star = cell(k, 1);
+% bs_star = cell(k, 1);
 
 for i=1:k
-    Ws_star{i} = Ws{i} - eta * grad_Ws{i};
-    bs_star{i} = bs{i} - eta * grad_bs{i};
+    NetParams.W{i} = NetParams.W{i} - eta * grads.W{i};
+    NetParams.b{i} = NetParams.b{i} - eta * grads.b{i};
+    
+    if NetParams.use_bn && i < k
+        NetParams.gammas{i} = NetParams.gammas{i} - eta * grads.gammas{i};
+        NetParams.betas{i} = NetParams.betas{i} - eta * grads.betas{i};
+    end
 end
 end
 
