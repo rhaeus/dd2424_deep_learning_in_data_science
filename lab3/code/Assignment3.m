@@ -55,9 +55,6 @@ ms = [50;50]; % number of nodes in hidden layer
 
 [NetParams] = InitModel(ms,d,K);
 NetParams.use_bn = true;
-% size(ms)
-% size(Ws)
-
 
 n_batch = 100;
 eta_min = 1e-5; 
@@ -173,9 +170,9 @@ function testGradients(X_train, Y_train, NetParams, lambda)
 
 disp('compute grads num')
 
-% nGrads = ComputeGradsNumSlow(X_train(:, 1:2), Y_train(:, 1:2), NetParams, lambda, 1e-5);
-% save numgrads3layer.mat nGrads
-load numgrads3layer.mat
+nGrads = ComputeGradsNumSlow(X_train(:, 1:2), Y_train(:, 1:2), NetParams, lambda, 1e-5);
+save numgrads3layer.mat nGrads
+% load numgrads3layer.mat
 
 disp('compute grads analytic')
 [P, Xs, BnParams] = EvaluateClassifier(X_train(:, 1:2), NetParams);
@@ -234,7 +231,6 @@ for i = 1:k
 end
 
 end
-
 
 function [acc_valid, acc_test] = train(X_train, Y_train,y_train, X_valid,Y_valid, y_valid, X_test, Y_test, y_test, NetParams, cycles, n_s, eta_max, eta_min, n_batch, lambda, log)
 [d, n] = size(X_train);
@@ -474,7 +470,6 @@ end
 
 end
 
-% functions
 function [NetParams] = InitModel(ms, d, K)
 rng(400);
 %Xavier initialization
@@ -667,12 +662,6 @@ for i = 1:k-1
         next_x = max(0, s_tilde_i);
         
         BnParams.S_hat{i} = s_hat_i;
-        
-%         var_i
-%         mu_i
-%         var{i} = transpose(var_i);
-        
-        
     else
         next_x = max(0, s_i);
     end
@@ -711,8 +700,6 @@ function [NetParams, BnParams] = MiniBatchGD(X, Y, eta, NetParams, lambda)
 [grads] = ComputeGradients(Xs, Y, P, NetParams, BnParams, lambda);
 
 [k, ~] = size(NetParams.W);
-% Ws_star = cell(k, 1);
-% bs_star = cell(k, 1);
 
 for i=1:k
     NetParams.W{i} = NetParams.W{i} - eta * grads.W{i};
