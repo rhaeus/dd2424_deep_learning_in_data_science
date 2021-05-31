@@ -1,5 +1,5 @@
 # Fdb version 3
-["pdflatex"] 1620301148 "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.tex" "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.pdf" "main" 1620301149
+["pdflatex"] 1620301619 "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.tex" "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.pdf" "main" 1620301620
   "../code/result_pics/accuracy_lambda=0.00564_ns=2250_cycles=3_k=3_bn=1.png" 1620298271 44281 0f405a4886def8d024ce8baa8942b118 ""
   "../code/result_pics/cost_lambda=0.00500_ns=2250_cycles=2_k=3_bn=0.png" 1620292227 44698 9cf791fe0a8bef41f9e405038f02f3d9 ""
   "../code/result_pics/cost_lambda=0.00500_ns=2250_cycles=2_k=3_bn=1.png" 1620292900 44653 0e95a48b324c109343a2d7cef2b700a8 ""
@@ -12,7 +12,7 @@
   "../code/result_pics/cost_lambda=0.00500_ns=2250_cycles=2_k=9_bn=0.png" 1620293112 45340 5fde4b537394e1e296adfc87c1d7a645 ""
   "../code/result_pics/cost_lambda=0.00500_ns=2250_cycles=2_k=9_bn=1.png" 1620293247 39444 73f389357b9a292e383fc25a3d9328c7 ""
   "../code/result_pics/cost_lambda=0.00564_ns=2250_cycles=3_k=3_bn=1.png" 1620298270 33674 5ec343491730bafadbce0684b641bf31 ""
-  "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.aux" 1620301149 5610 339edc9b27f78b8767bf2fdf723c7114 ""
+  "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.aux" 1620301620 5610 339edc9b27f78b8767bf2fdf723c7114 ""
   "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.tex" 1617373791 1411 36d9ad4b81fbc0988eb0b94b71457412 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/inconsolata/i4-ot1-0.enc" 1561323594 2496 4d35740f3a177992ff7b134746c0a1db ""
@@ -130,14 +130,14 @@
   "/usr/local/texlive/2020/texmf.cnf" 1617356569 455 5b996dcaa0eb4ef14a83b026bc0a008c ""
   "content.tex" 1620301148 6979 b9fb8ee19074486468c1b7532bbac19e ""
   "custom_imports.tex" 1618569718 492 afaa22cbf2931f26510d50f42b7d7d5b ""
-  "main.aux" 1620301149 5610 339edc9b27f78b8767bf2fdf723c7114 "pdflatex"
-  "main.out" 1620301149 3134 f55024df58a3b06662ccf45a1d16eda6 "pdflatex"
+  "main.aux" 1620301620 5610 339edc9b27f78b8767bf2fdf723c7114 "pdflatex"
+  "main.out" 1620301620 3134 f55024df58a3b06662ccf45a1d16eda6 "pdflatex"
   "main.tex" 1617373791 1411 36d9ad4b81fbc0988eb0b94b71457412 ""
-  "titlepage.tex" 1620292019 263 4688fe8770f21318603726918c195058 ""
+  "titlepage.tex" 1620301619 327 bf8557f0748b01242f7f07780ffcd680 ""
   (generated)
   "main.log"
+  "main.pdf"
   "main.aux"
+  "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.log"
   "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.pdf"
   "main.out"
-  "/home/ramona/projects/dd2424_deep_learning_in_data_science/lab3/report/main.log"
-  "main.pdf"
