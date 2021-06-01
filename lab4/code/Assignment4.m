@@ -24,7 +24,7 @@ end
 m = 100; % dimensionality of hidden state
 eta = 0.1; % learning rate
 seq_length = 25; % length of input sequence
-rng(42);
+% rng(42);
 RNN.b = zeros(m, 1);
 RNN.c = zeros(K, 1);
 sig = 0.01;
@@ -39,7 +39,7 @@ ada.W = zeros(size(RNN.W));
 ada.V = zeros(size(RNN.V));
 
 
-% test gradients
+% % test gradients
 % h0 = zeros(m, 1);
 % 
 % % make one hot encoding of input sequence
@@ -84,7 +84,7 @@ smooth_loss = -1;
 best_RNN = RNN;
 best_step = 0;
 
-epochs = 5;
+epochs = 10;
 book_len = length(book_data);
 for epoch = 1 : epochs
     e = 1;
@@ -265,25 +265,6 @@ grads.b = (sum(grad_a))';
 
 grads.U = grad_a' * X';
 grads.W = grad_a' * h(:,1 : end-1)';
-
-
-% grad_o = -(Y - p)';
-% grad_h = grad_o(n, :) * RNN.V;
-% 
-% grad_a = zeros(n, m);
-% grad_a(n, :) = grad_h * diag(1 - (tanh(a(:, n))).^2);
-% 
-% for t = n-1 : -1 : 1
-%    grad_h = grad_o(t, :) * RNN.V + grad_a(t+1, :) * RNN.W;
-%    grad_a(t, :) = grad_h * diag(1 - (tanh(a(:, t))).^2);
-% end
-% 
-% grads.b = (sum(grad_a))';
-% grads.c = (sum(grad_o))';
-% 
-% grads.U = grad_a' * X';
-% grads.W = grad_a' * h(:,1 : end-1)';
-% grads.V = grad_o' * h(:,2 : end)';
 
 end
 
